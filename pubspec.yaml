@@ -30,6 +30,9 @@ dependencies:
   file_picker: ^8.0.0
   share_plus: ^10.0.0
 
+  # Open download links from the home header (V1.3 下载入口)
+  url_launcher: ^6.3.0
+
   # Date formatting helpers
   intl: ^0.19.0
 

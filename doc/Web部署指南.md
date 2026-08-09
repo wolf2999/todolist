@@ -326,3 +326,37 @@ todolist 的 Flutter Web 产物本身就是一个 **PWA（渐进式 Web 应用�
 
 `web/manifest.json`、`web/index.html`、`web/icons/*` 都属于 `web/` 目录，随 `flutter build web` 一起打进 `build/web`。
 改完直接 `git push`，CF 自动重建即生效。
+
+---
+
+## 12. 主页安装包下载入口 (V1.3)
+
+主页右上角新增「下载」按钮（**仅 Web / 桌面端可见**，移动端隐藏——因为它本身就在 App 内），
+点击弹出底部菜单，提供：
+
+- **Android APK**：`web/downloads/app-release.apk`，随 Web 一起部署到 CF，URL 形如
+  `https://todolist.pages.dev/downloads/app-release.apk`。
+- **Windows EXE**：配置项占位，**未就绪时菜单项置灰并提示「即将推出」**。
+
+### 12.1 配置项（改这里即可）
+
+`lib/models/constants.dart` 的 `DownloadLinks`：
+
+```dart
+class DownloadLinks {
+  static const String apkUrl = 'downloads/app-release.apk';
+  static const String windowsExeUrl = ''; // TODO: 切到 Windows 打包后填 'downloads/todolist-setup.exe'
+  static bool get windowsReady => windowsExeUrl.isNotEmpty;
+}
+```
+
+### 12.2 接入 Windows EXE（切到 Windows 机器后）
+
+1. Windows 上 `flutter build windows --release`，产物在 `build/windows/x64/runner/Release/`。
+2. 用 Inno Setup / MSIX 打包成安装包（如 `todolist-setup.exe`）。
+3. 把安装包放进 `web/downloads/`，并把 `DownloadLinks.windowsExeUrl` 改为
+   `'downloads/todolist-setup.exe'`。
+4. `git push` 触发 CF 重建，菜单自动启用 Windows 项。
+
+> 注意：Flutter Windows 产物除 exe 外还有一堆 dll/数据文件，建议**打成单个安装包**再上传，
+> 不要直接放裸 Release 目录。iOS / macOS 同理（未来上架或 `flutter build macos` 后打包）。
