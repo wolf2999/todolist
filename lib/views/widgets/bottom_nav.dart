@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/colors.dart';
@@ -32,9 +33,9 @@ class BottomNav extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _item(0, Icons.home_outlined, Icons.home, '首页'),
-          _item(1, Icons.category_outlined, Icons.category, '分类'),
-          _item(2, Icons.settings_outlined, Icons.settings, '设置'),
+          _item(0, Icons.home_outlined, Icons.home, 'navHome'.tr()),
+          _item(1, Icons.category_outlined, Icons.category, 'navCategory'.tr()),
+          _item(2, Icons.settings_outlined, Icons.settings, 'setting'.tr()),
         ],
       ),
     );

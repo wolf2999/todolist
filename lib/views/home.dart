@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -53,7 +54,7 @@ class Home extends StatelessWidget {
                 child: TextField(
                   onChanged: taskController.setSearch,
                   decoration: InputDecoration(
-                    hintText: '搜索任务',
+                    hintText: 'searchHint'.tr(),
                     hintStyle: TextStyle(color: ToDoColors.textGrey),
                     icon: Icon(Icons.search, color: ToDoColors.textGrey),
                     border: InputBorder.none,
@@ -113,7 +114,7 @@ class _EmptyHint extends StatelessWidget {
           Icon(Icons.inbox_outlined, size: 64, color: ToDoColors.textGrey),
           const SizedBox(height: 12),
           Text(
-            keyword.isNotEmpty ? '没有匹配的任务' : '这一天还没有任务',
+            keyword.isNotEmpty ? 'noTasksHint'.tr() : 'noTasks'.tr(),
             style: TextStyle(color: ToDoColors.textGrey, fontSize: 14),
           ),
         ],

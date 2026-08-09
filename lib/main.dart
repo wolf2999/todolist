@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -12,8 +13,24 @@ import 'views/category_page.dart';
 import 'views/setting_page.dart';
 import 'views/widgets/bottom_nav.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  // EasyLocalization needs the binding initialized before loading assets.
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+  runApp(
+    EasyLocalization(
+      // 支持简体中文、繁体中文、英文。首次进入跟随系统语言，用户手动切换后记住选择。
+      supportedLocales: const [
+        Locale('zh', 'CN'),
+        Locale('zh', 'TW'),
+        Locale('en', 'US'),
+      ],
+      fallbackLocale: const Locale('zh', 'CN'),
+      path: 'assets/i18n',
+      useOnlyLangCode: false,
+      child: const MyApp(),
+    ),
+  );
 }
 
 /// MVC wiring point: every Controller is provided at the top of the tree so
@@ -31,10 +48,12 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeController>(
         builder: (context, themeController, _) => MaterialApp(
-          title: '待办清单',
+          title: 'appTitle'.tr(),
           debugShowCheckedModeBanner: false,
-          locale: const Locale('zh', 'CN'),
-          supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
+          // Locale is driven by EasyLocalization (follows system on first run,
+          // remembers the user's choice afterwards).
+          locale: context.locale,
+          supportedLocales: context.supportedLocales,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

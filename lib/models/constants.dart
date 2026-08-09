@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Priority level for a task (V1.1 需求：任务优先级 高/中/低).
 enum Priority { high, medium, low }
@@ -7,11 +8,11 @@ extension PriorityInfo on Priority {
   String get label {
     switch (this) {
       case Priority.high:
-        return '高';
+        return 'priorityHigh'.tr();
       case Priority.medium:
-        return '中';
+        return 'priorityMedium'.tr();
       case Priority.low:
-        return '低';
+        return 'priorityLow'.tr();
     }
   }
 
@@ -37,6 +38,19 @@ class BuiltInCategories {
     {'id': 'work', 'name': '工作'},
     {'id': 'study', 'name': '学习'},
   ];
+
+  /// Maps built-in category ids to their i18n keys, so the names can be
+  /// localized at display time without changing what is stored in the DB.
+  static const Map<String, String> _trKeys = {
+    'daily': 'catDaily',
+    'work': 'catWork',
+    'study': 'catStudy',
+  };
+
+  /// Returns the localized display name for a category id. For user-created
+  /// categories (not in the map) the raw [name] is returned as-is.
+  static String localizedName(String id, String name) =>
+      _trKeys.containsKey(id) ? _trKeys[id]!.tr() : name;
 }
 
 /// Built-in theme modes (V1.0 需求 6.4).

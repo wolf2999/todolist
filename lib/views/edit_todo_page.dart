@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -53,7 +54,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
       initialDate: _dueDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
-      locale: const Locale('zh', 'CN'),
+      locale: context.locale,
     );
     if (date == null) return;
     if (!mounted) return;
@@ -76,7 +77,7 @@ class _EditTodoPageState extends State<EditTodoPage> {
   Future<void> _save() async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入任务名称')),
+        SnackBar(content: Text('titleRequired'.tr())),
       );
       return;
     }
@@ -133,20 +134,20 @@ class _EditTodoPageState extends State<EditTodoPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('任务名称'),
+                      _FieldLabel('title'.tr()),
                       _Input(
                         controller: _titleController,
-                        hint: '请输入任务名称',
+                        hint: 'titleHint'.tr(),
                       ),
                       const SizedBox(height: 18),
-                      _FieldLabel('任务备注'),
+                      _FieldLabel('description'.tr()),
                       _Input(
                         controller: _noteController,
-                        hint: '请输入任务备注',
+                        hint: 'descriptionHint'.tr(),
                         maxLines: 3,
                       ),
                       const SizedBox(height: 18),
-                      _FieldLabel('截止时间'),
+                      _FieldLabel('dueDate'.tr()),
                       GestureDetector(
                         onTap: _pickDateTime,
                         child: Container(
@@ -173,18 +174,18 @@ class _EditTodoPageState extends State<EditTodoPage> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      _FieldLabel('优先级 (V1.1)'),
+                      _FieldLabel('priority'.tr()),
                       _PrioritySelector(
                         value: _priority,
                         onChanged: (p) => setState(() => _priority = p),
                       ),
                       const SizedBox(height: 18),
-                      _FieldLabel('分类'),
+                      _FieldLabel('category'.tr()),
                       Wrap(
                         spacing: 10,
                         children: categoryController.categories
                             .map((c) => _CategoryChoice(
-                                  name: c.name,
+                                  name: BuiltInCategories.localizedName(c.id, c.name),
                                   selected: _categoryId == c.id,
                                   onTap: () =>
                                       setState(() => _categoryId = c.id),
@@ -238,9 +239,9 @@ class _Header extends StatelessWidget {
                   color: Colors.white, size: 22),
             ),
           ),
-          const Text(
-            '编辑任务',
-            style: TextStyle(
+          Text(
+            'editTodo'.tr(),
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -387,9 +388,9 @@ class _Actions extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('保存任务',
+                child: Text('save'.tr(),
                     style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(width: 12),
@@ -403,7 +404,7 @@ class _Actions extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text('取消',
+                child: Text('cancel'.tr(),
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

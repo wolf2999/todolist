@@ -3,6 +3,7 @@ import 'dart:io';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,16 +17,29 @@ import '../models/constants.dart';
 import '../utils/colors.dart';
 
 /// Settings screen (UI4 1:1 还原).
-/// Appearance (theme toggle), Data management (clear done / clear all),
-/// About (version / privacy), bottom notice.
+/// Language switcher, Appearance (theme toggle), Data management (import/export,
+/// clear done / clear all), About (version / privacy), bottom notice.
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
+
+  static const List<Locale> _languages = [
+    Locale('zh', 'CN'),
+    Locale('zh', 'TW'),
+    Locale('en', 'US'),
+  ];
+
+  static const List<String> _languageLabels = [
+    '简体中文',
+    '繁體中文',
+    'English',
+  ];
 
   @override
   Widget build(BuildContext context) {
     final themeController = context.watch<ThemeController>();
     final taskController = context.watch<TaskController>();
     final categoryController = context.watch<CategoryController>();
+    final currentLocale = context.locale;
 
     Future<void> onExport() async {
       try {
@@ -40,7 +54,7 @@ class SettingPage extends StatelessWidget {
           html.Url.revokeObjectUrl(url);
           if (!context.mounted) return;
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('已导出数据')));
+              .showSnackBar(SnackBar(content: Text('exported'.tr())));
           return;
         }
         final path =
@@ -48,18 +62,18 @@ class SettingPage extends StatelessWidget {
         if (!context.mounted) return;
         final result = await Share.shareXFiles(
           [XFile(path)],
-          subject: 'Todolist 备份文件',
-          text: '导出待办数据',
+          subject: 'Todolist'.tr(),
+          text: 'exportData'.tr(),
         );
         if (!context.mounted) return;
         if (result.status == ShareResultStatus.success) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('已导出数据')));
+              .showSnackBar(SnackBar(content: Text('exported'.tr())));
         }
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导出失败：$e')));
+            .showSnackBar(SnackBar(content: Text('exportFailed'.tr(namedArgs: {'msg': '$e'}))));
       }
     }
 
@@ -85,7 +99,7 @@ class SettingPage extends StatelessWidget {
           onCategories: (cats) => categoryController.replaceAll(cats));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('已导入 $count 条任务')));
+          .showSnackBar(SnackBar(content: Text('imported'.tr(namedArgs: {'count': count.toString()}))));
     }
 
     return Scaffold(
@@ -94,14 +108,46 @@ class SettingPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 44, 20, 20),
           children: [
-            const Center(
-              child: Text('设置',
-                  style: TextStyle(
+            Center(
+              child: Text('setting'.tr(),
+                  style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: ToDoColors.textDark)),
             ),
             const SizedBox(height: 24),
+            // Language switcher (V1.4)
+            _SectionCard(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                  child: Text('language'.tr(),
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: ToDoColors.textGrey)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < _languages.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 10),
+                        _ThemePill(
+                          label: _languageLabels[i],
+                          active: currentLocale.languageCode ==
+                                  _languages[i].languageCode &&
+                              currentLocale.countryCode ==
+                                  _languages[i].countryCode,
+                          onTap: () => context.setLocale(_languages[i]),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             // Appearance
             Container(
               padding: const EdgeInsets.all(18),
@@ -114,8 +160,8 @@ class SettingPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('外观',
-                      style: TextStyle(
+                  Text('theme'.tr(),
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600)),
@@ -123,14 +169,14 @@ class SettingPage extends StatelessWidget {
                   Row(
                     children: [
                       _ThemePill(
-                        label: '深色模式',
+                        label: 'darkMode'.tr(),
                         active: themeController.mode == AppThemeMode.dark,
                         onTap: () =>
                             themeController.setMode(AppThemeMode.dark),
                       ),
                       const SizedBox(width: 12),
                       _ThemePill(
-                        label: '跟随系统',
+                        label: 'followSystem'.tr(),
                         active: themeController.mode == AppThemeMode.system,
                         onTap: () =>
                             themeController.setMode(AppThemeMode.system),
@@ -146,13 +192,13 @@ class SettingPage extends StatelessWidget {
               children: [
                 _Row(
                   icon: Icons.upload_outlined,
-                  title: '导出数据',
+                  title: 'exportData'.tr(),
                   onTap: onExport,
                 ),
                 const Divider(height: 1, color: ToDoColors.divider),
                 _Row(
                   icon: Icons.download_outlined,
-                  title: '导入数据',
+                  title: 'importData'.tr(),
                   onTap: onImport,
                 ),
               ],
@@ -172,20 +218,14 @@ class SettingPage extends StatelessWidget {
                             Icon(Icons.add_to_home_screen_outlined,
                                 color: ToDoColors.primary, size: 22),
                             const SizedBox(width: 10),
-                            const Text('安装为 App',
-                                style: TextStyle(
+                            Text('installApp'.tr(),
+                                style: const TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w600)),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          kIsWeb
-                              ? '在手机或电脑的浏览器中打开后，可通过系统菜单“添加到主屏幕”'
-                                  '把它安装成独立应用，离线也能使用。\n'
-                                  '· iPhone/iPad：Safari 底部“分享”→“添加到主屏幕”\n'
-                                  '· Android：右上“⋮”→“安装应用”\n'
-                                  '· macOS/Windows：地址栏右侧“安装”图标'
-                              : '',
+                          'installAppHint'.tr(),
                           style: TextStyle(
                               fontSize: 13, color: ToDoColors.textGrey, height: 1.5),
                         ),
@@ -200,34 +240,34 @@ class SettingPage extends StatelessWidget {
               children: [
                 _Row(
                   icon: Icons.check_circle_outline,
-                  title: '一键清空已完成',
+                  title: 'clearDone'.tr(),
                   onTap: () async {
                     await taskController.clearDone();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('已清空已完成任务')));
+                        .showSnackBar(SnackBar(content: Text('clearDone'.tr())));
                   },
                 ),
                 const Divider(height: 1, color: ToDoColors.divider),
                 _Row(
                   icon: Icons.delete_outline,
-                  title: '清空所有任务',
+                  title: 'clearAll'.tr(),
                   danger: true,
                   onTap: () async {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('确认清空'),
-                        content: const Text('将删除全部任务，且不可恢复。'),
+                        title: Text('confirmClear'.tr()),
+                        content: Text('deleteAllWarn'.tr()),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('取消'),
+                            child: Text('cancel'.tr()),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('清空',
-                                style: TextStyle(color: ToDoColors.warning)),
+                            child: Text('clear'.tr(),
+                                style: const TextStyle(color: ToDoColors.warning)),
                           ),
                         ],
                       ),
@@ -243,9 +283,9 @@ class SettingPage extends StatelessWidget {
             // About
             _SectionCard(
               children: [
-                _Row(icon: Icons.info_outline, title: '版本号 1.0.0'),
+                _Row(icon: Icons.info_outline, title: 'version'.tr()),
                 const Divider(height: 1, color: ToDoColors.divider),
-                _Row(icon: Icons.lock_outline, title: '隐私说明'),
+                _Row(icon: Icons.lock_outline, title: 'privacy'.tr()),
               ],
             ),
             const SizedBox(height: 20),
@@ -255,10 +295,10 @@ class SettingPage extends StatelessWidget {
                 color: ToDoColors.editPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  '本地存储数据，卸载应用后无法恢复',
-                  style: TextStyle(
+                  'localData'.tr(),
+                  style: const TextStyle(
                       color: ToDoColors.editPrimary, fontSize: 13),
                 ),
               ),

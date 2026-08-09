@@ -1,6 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../controllers/category_controller.dart';
+import '../../models/constants.dart';
 import '../../utils/colors.dart';
 
 /// Horizontal category filter tabs (UI1: 全部 / 日常 / 工作 / 学习).
@@ -20,10 +22,10 @@ class CategoryFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = <Widget>[
-      _chip(context, null, '全部'),
+      _chip(context, null, 'all'.tr()),
     ];
     for (final c in categoryController.categories) {
-      chips.add(_chip(context, c.id, c.name));
+      chips.add(_chip(context, c.id, BuiltInCategories.localizedName(c.id, c.name)));
     }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

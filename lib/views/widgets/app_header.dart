@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,19 +47,19 @@ class AppHeader extends StatelessWidget {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    '今日待办',
-                    style: TextStyle(
+                    'todayTasks'.tr(),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    '高效管理你的每一天',
-                    style: TextStyle(
+                    'todaySubtitle'.tr(),
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
                     ),
@@ -98,11 +99,11 @@ class AppHeader extends StatelessWidget {
           const SizedBox(height: 22),
           Row(
             children: [
-              _StatChip(label: '全部', value: total),
+              _StatChip(label: 'all'.tr(), value: total),
               const SizedBox(width: 10),
-              _StatChip(label: '已完成', value: done),
+              _StatChip(label: 'completed'.tr(), value: done),
               const SizedBox(width: 10),
-              _StatChip(label: '未完成', value: remaining),
+              _StatChip(label: 'pending'.tr(), value: remaining),
             ],
           ),
         ],
@@ -138,23 +139,23 @@ class _DownloadButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('下载安装包',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text('downloadPackages'.tr(),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
             _DownloadItem(
               icon: Icons.android,
-              label: 'Android APK',
-              subtitle: 'release 安装包',
+              label: 'downloadApk'.tr(),
+              subtitle: 'releaseApkSub'.tr(),
               url: DownloadLinks.apkUrl,
             ),
             _DownloadItem(
               icon: Icons.desktop_windows_outlined,
-              label: 'Windows EXE',
+              label: 'downloadWindows'.tr(),
               subtitle: DownloadLinks.windowsReady
-                  ? 'Windows 安装包'
-                  : '即将推出',
+                  ? 'windowsPkgSub'.tr()
+                  : 'comingSoon'.tr(),
               url: DownloadLinks.windowsExeUrl,
               enabled: DownloadLinks.windowsReady,
             ),
@@ -202,7 +203,7 @@ class _DownloadItem extends StatelessWidget {
             }
           : () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Windows 版本即将推出')),
+                SnackBar(content: Text('comingSoon'.tr())),
               );
             },
     );

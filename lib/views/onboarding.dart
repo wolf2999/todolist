@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
 
@@ -23,21 +24,21 @@ class Onboarding extends StatelessWidget {
             Positioned(
               bottom: 100,
               child: Column(
-                children: const [
+                children: [
                   Text(
-                    '待办清单',
-                    style: TextStyle(
+                    'appTitle'.tr(),
+                    style: const TextStyle(
                       fontFamily: 'Rubik',
                       fontWeight: FontWeight.w900,
                       fontSize: 32,
                       color: ToDoColors.textDark,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
-                    '一个跨平台的简单方式\n让你的一天井井有条。',
+                    'onboardDesc'.tr(),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Rubik',
                       fontWeight: FontWeight.w400,
                       fontSize: 16,
