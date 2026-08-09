@@ -131,17 +131,27 @@ class SettingPage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
                   child: Row(
                     children: [
-                      for (var i = 0; i < _languages.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 10),
-                        _ThemePill(
-                          label: _languageLabels[i],
-                          active: currentLocale.languageCode ==
-                                  _languages[i].languageCode &&
-                              currentLocale.countryCode ==
-                                  _languages[i].countryCode,
-                          onTap: () => context.setLocale(_languages[i]),
-                        ),
-                      ],
+                      // V1.4.1 排查：先打印实际 children 数量，确认是 spread+for 没生成 3 个子元素，
+                      // 还是 layout 阶段把后面元素裁掉了。
+                      Builder(builder: (ctx) {
+                        final children = <Widget>[
+                          for (var i = 0; i < _languages.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 10),
+                            Expanded(
+                              child: _ThemePill(
+                                label: _languageLabels[i],
+                                active: currentLocale.languageCode ==
+                                        _languages[i].languageCode &&
+                                    currentLocale.countryCode ==
+                                        _languages[i].countryCode,
+                                onTap: () => context.setLocale(_languages[i]),
+                              ),
+                            ),
+                          ],
+                        ];
+                        debugPrint('[SettingPage] language Row children = ${children.length}');
+                        return Row(children: children);
+                      }),
                     ],
                   ),
                 ),
@@ -168,18 +178,22 @@ class SettingPage extends StatelessWidget {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      _ThemePill(
-                        label: 'darkMode'.tr(),
-                        active: themeController.mode == AppThemeMode.dark,
-                        onTap: () =>
-                            themeController.setMode(AppThemeMode.dark),
+                      Expanded(
+                        child: _ThemePill(
+                          label: 'darkMode'.tr(),
+                          active: themeController.mode == AppThemeMode.dark,
+                          onTap: () =>
+                              themeController.setMode(AppThemeMode.dark),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      _ThemePill(
-                        label: 'followSystem'.tr(),
-                        active: themeController.mode == AppThemeMode.system,
-                        onTap: () =>
-                            themeController.setMode(AppThemeMode.system),
+                      Expanded(
+                        child: _ThemePill(
+                          label: 'followSystem'.tr(),
+                          active: themeController.mode == AppThemeMode.system,
+                          onTap: () =>
+                              themeController.setMode(AppThemeMode.system),
+                        ),
                       ),
                     ],
                   ),
@@ -321,24 +335,22 @@ class _ThemePill extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Expanded(
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: active
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: active ? ToDoColors.editPrimary : Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
+          decoration: BoxDecoration(
+            color: active
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: active ? ToDoColors.editPrimary : Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

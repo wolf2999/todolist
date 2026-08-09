@@ -30,7 +30,7 @@ flutter doctor -v || true
 # 3) 拉取依赖
 flutter pub get
 
-# 4) 构建 Web release 产物
+# 4) 构建 Web release 产物 (Flutter 3.29+ 渲染器按平台自动选择, 无需额外参数)
 flutter build web --release
 
 echo ">>> CF build done. Output: build/web"

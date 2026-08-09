@@ -35,8 +35,41 @@
 
   <title>Todo List</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* 启动占位：在 Flutter 引擎加载完成前立即显示，消除白屏 (V1.4 优化 A) */
+    html, body { margin: 0; padding: 0; height: 100%; background: #f5f6fa; }
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #4A6CF7;
+    }
+    #loading .logo {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: linear-gradient(135deg, #6D8BFF, #4A6CF7);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 34px; font-weight: 800;
+      box-shadow: 0 10px 30px rgba(74,108,247,0.35);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    #loading .name { margin-top: 18px; font-size: 18px; font-weight: 700; }
+    #loading .tip  { margin-top: 8px; font-size: 13px; color: #9aa0b4; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(0.92); opacity: 0.75; }
+    }
+  </style>
 </head>
 <body>
+  <!-- 启动占位（Flutter 渲染首帧后自动移除） -->
+  <div id="loading">
+    <div class="logo">T</div>
+    <div class="name">Todo List</div>
+    <div class="tip">加载中…</div>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
