@@ -44,7 +44,7 @@ enum AppThemeMode { light, dark, system }
 
 /// 主页右上角「下载」入口配置 (Web / 桌面端可见，移动端隐藏).
 ///
-/// 链接为相对路径，部署后自动指向站点根 (如 https://todolist.pages.dev/...)。
+/// 链接为相对路径，部署后自动指向站点根 (如 https://atodolist.pages.dev/...)。
 /// 把安装包放进 `web/downloads/` 目录，随 `flutter build web` 一起发布即可。
 ///
 /// 说明：

@@ -110,7 +110,7 @@ flutter build web --release --base-href "/todolist/"  # 用于子路径托管（
 
 | 配置项 | 填写值 | 说明 |
 |---|---|---|
-| **Project name** | `todolist` | 决定默认域名为 `todolist.pages.dev` |
+| **Project name** | `atodolist` | 决定默认域名为 `atodolist.pages.dev` |
 | **Production branch** | `main` | 推送到 main 自动触发构建 |
 | **Framework preset** | `None` | Flutter 不在 CF 预设列表 |
 | **Build command** | `./scripts/build_web_cf.sh` | CI 脚本会自动装 Flutter 3.29.3 并构建 |
@@ -128,8 +128,8 @@ flutter build web --release --base-href "/todolist/"  # 用于子路径托管（
 
 | 类型 | URL |
 |---|---|
-| Production | `https://todolist.pages.dev` |
-| Preview（每次 PR 自动生成） | `https://<commit-hash>.todolist.pages.dev` |
+| Production | `https://atodolist.pages.dev` |
+| Preview（每次 PR 自动生成） | `https://<commit-hash>.atodolist.pages.dev` |
 
 ---
 
@@ -270,7 +270,7 @@ git add .
 git commit -m "feat: xxx"
 git push origin main
 ```
-CF 检测到 main 分支有新 commit → 自动跑 `./scripts/build_web_cf.sh` → 部署到 `todolist.pages.dev`。
+CF 检测到 main 分支有新 commit → 自动跑 `./scripts/build_web_cf.sh` → 部署到 `atodolist.pages.dev`。
 
 **整个流程约 1-3 分钟**（首次构建慢，后续有缓存）。
 
@@ -335,7 +335,7 @@ todolist 的 Flutter Web 产物本身就是一个 **PWA（渐进式 Web 应用�
 点击弹出底部菜单，提供：
 
 - **Android APK**：`web/downloads/app-release.apk`，随 Web 一起部署到 CF，URL 形如
-  `https://todolist.pages.dev/downloads/app-release.apk`。
+  `https://atodolist.pages.dev/downloads/app-release.apk`。
 - **Windows EXE**：配置项占位，**未就绪时菜单项置灰并提示「即将推出」**。
 
 ### 12.1 配置项（改这里即可）
