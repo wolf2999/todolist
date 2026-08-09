@@ -1,0 +1,232 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../controllers/task_controller.dart';
+import '../controllers/theme_controller.dart';
+import '../models/constants.dart';
+import '../utils/colors.dart';
+
+/// Settings screen (UI4 1:1 还原).
+/// Appearance (theme toggle), Data management (clear done / clear all),
+/// About (version / privacy), bottom notice.
+class SettingPage extends StatelessWidget {
+  const SettingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final themeController = context.watch<ThemeController>();
+    final taskController = context.watch<TaskController>();
+
+    return Scaffold(
+      backgroundColor: ToDoColors.background,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 44, 20, 20),
+          children: [
+            const Center(
+              child: Text('设置',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: ToDoColors.textDark)),
+            ),
+            const SizedBox(height: 24),
+            // Appearance
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [ToDoColors.editPrimary, ToDoColors.editPrimaryDark],
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('外观',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _ThemePill(
+                        label: '深色模式',
+                        active: themeController.mode == AppThemeMode.dark,
+                        onTap: () =>
+                            themeController.setMode(AppThemeMode.dark),
+                      ),
+                      const SizedBox(width: 12),
+                      _ThemePill(
+                        label: '跟随系统',
+                        active: themeController.mode == AppThemeMode.system,
+                        onTap: () =>
+                            themeController.setMode(AppThemeMode.system),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Data management
+            _SectionCard(
+              children: [
+                _Row(
+                  icon: Icons.check_circle_outline,
+                  title: '一键清空已完成',
+                  onTap: () async {
+                    await taskController.clearDone();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('已清空已完成任务')));
+                  },
+                ),
+                const Divider(height: 1, color: ToDoColors.divider),
+                _Row(
+                  icon: Icons.delete_outline,
+                  title: '清空所有任务',
+                  danger: true,
+                  onTap: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('确认清空'),
+                        content: const Text('将删除全部任务，且不可恢复。'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('取消'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('清空',
+                                style: TextStyle(color: ToDoColors.warning)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await taskController.clearAll();
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // About
+            _SectionCard(
+              children: [
+                _Row(icon: Icons.info_outline, title: '版本号 1.0.0'),
+                const Divider(height: 1, color: ToDoColors.divider),
+                _Row(icon: Icons.lock_outline, title: '隐私说明'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: ToDoColors.editPrimary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Center(
+                child: Text(
+                  '本地存储数据，卸载应用后无法恢复',
+                  style: TextStyle(
+                      color: ToDoColors.editPrimary, fontSize: 13),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemePill extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _ThemePill({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: active ? ToDoColors.editPrimary : Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _SectionCard extends StatelessWidget {
+  final List<Widget> children;
+  const _SectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(children: children),
+      );
+}
+
+class _Row extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool danger;
+  final VoidCallback? onTap;
+  const _Row({
+    required this.icon,
+    required this.title,
+    this.danger = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        onTap: onTap,
+        leading: Icon(icon,
+            color: danger ? ToDoColors.warning : ToDoColors.textGrey),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: danger ? ToDoColors.warning : ToDoColors.textDark,
+            fontSize: 15,
+          ),
+        ),
+        trailing:
+            onTap != null ? const Icon(Icons.chevron_right, color: ToDoColors.textGrey) : null,
+      );
+}

@@ -1,0 +1,58 @@
+# Flutter/Dart 编译产物
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+build/
+
+# Android
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/.generated
+android/.idea/
+android/app/build/
+# CMake NDK编译缓存（新增）
+android/.cxx/
+android/app/cxx/
+android/app/.cxx/
+
+# iOS
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/*.mode1v3
+ios/Runner.xcodeproj/*.pbxuser
+ios/.symlinks
+ios/build/
+ios/DerivedData/
+
+# macOS
+macos/Pods/
+macos/Podfile.lock
+macos/build/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Linux
+linux/flutter/ephemeral/
+
+# 缓存、日志
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.iws
+*.swp
+*~
+
+# 密钥、环境变量（重要！不要提交密钥）
+*.env
+*.env.local
+key.jks
+*.p12
+*.keystore
