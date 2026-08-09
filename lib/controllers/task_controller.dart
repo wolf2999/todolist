@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -169,14 +170,22 @@ class TaskController extends ChangeNotifier {
   }
 
   /// Write the full payload (tasks + categories) to a JSON file and return its path.
-  Future<String> exportAll(List<CategoryModel> categories) async {
+  /// Native only: requires [path_provider] which is not implemented on Web.
+  Future<String> exportToFile(List<CategoryModel> categories) async {
     final dir = await getApplicationDocumentsDirectory();
-    final fileName =
-        'todolist_export_${DateTime.now().millisecondsSinceEpoch}.json';
+    final fileName = exportFileName();
     final file = File('${dir.path}/$fileName');
     await file.writeAsString(buildExportPayload(categories));
     return file.path;
   }
+
+  /// Build payload + filename. Web uses [exportBytes] for download,
+  /// native uses [exportToFile] then share.
+  Uint8List exportBytes(List<CategoryModel> categories) =>
+      Uint8List.fromList(utf8.encode(buildExportPayload(categories)));
+
+  String exportFileName() =>
+      'todolist_export_${DateTime.now().millisecondsSinceEpoch}.json';
 
   /// Replace current tasks AND categories from a backup file content.
   /// Returns the number of imported tasks.

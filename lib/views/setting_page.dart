@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -25,8 +29,22 @@ class SettingPage extends StatelessWidget {
 
     Future<void> onExport() async {
       try {
+        if (kIsWeb) {
+          final bytes = taskController.exportBytes(categoryController.categories);
+          final fileName = taskController.exportFileName();
+          final blob = html.Blob(<Object>[bytes]);
+          final url = html.Url.createObjectUrlFromBlob(blob);
+          final anchor = html.AnchorElement(href: url)
+            ..download = fileName;
+          anchor.click();
+          html.Url.revokeObjectUrl(url);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('已导出数据')));
+          return;
+        }
         final path =
-            await taskController.exportAll(categoryController.categories);
+            await taskController.exportToFile(categoryController.categories);
         if (!context.mounted) return;
         final result = await Share.shareXFiles(
           [XFile(path)],
@@ -49,11 +67,20 @@ class SettingPage extends StatelessWidget {
       final picked = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
+        withData: kIsWeb,
       );
-      if (picked == null || picked.files.single.path == null) return;
-      final file = File(picked.files.single.path!);
-      if (!await file.exists()) return;
-      final content = await file.readAsString();
+      if (picked == null || picked.files.isEmpty) return;
+      final f = picked.files.single;
+      String content;
+      if (kIsWeb) {
+        if (f.bytes == null) return;
+        content = utf8.decode(f.bytes!);
+      } else {
+        if (f.path == null) return;
+        final file = File(f.path!);
+        if (!await file.exists()) return;
+        content = await file.readAsString();
+      }
       final count = await taskController.importAll(content,
           onCategories: (cats) => categoryController.replaceAll(cats));
       if (!context.mounted) return;
