@@ -63,11 +63,13 @@ enum AppThemeMode { light, dark, system }
 ///
 /// 说明：
 /// - [apkUrl]：Android 安装包 (release) 已生成，放 web/downloads/app-release.apk。
-/// - [windowsExeUrl]：Windows 安装包需切到 Windows 机器 `flutter build windows`
-///   后把 exe (及依赖) 打包上传，再把此处替换成真实相对路径即可；留空表示未就绪。
+/// - [windowsExeUrl]：Windows 安装包。因 `flutter build windows` 产物是
+///   一个目录 (exe + 依赖 DLL + data/)，这里直接分发 zip 包，避免引入
+///   Inno Setup 等额外打包依赖。运行 `scripts/build_windows.sh` 会自动
+///   生成 web/downloads/todolist-windows.zip。
 class DownloadLinks {
   static const String apkUrl = 'downloads/app-release.apk';
-  static const String windowsExeUrl = ''; // TODO: 切到 Windows 打包后填 'downloads/todolist-setup.exe'
+  static const String windowsExeUrl = 'downloads/todolist-windows.zip';
   static bool get windowsReady => windowsExeUrl.isNotEmpty;
 }
 

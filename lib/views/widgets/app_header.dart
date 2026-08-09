@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/constants.dart';
@@ -195,9 +197,21 @@ class _DownloadItem extends StatelessWidget {
       enabled: enabled,
       onTap: enabled
           ? () async {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, webOnlyWindowName: '_self');
+              if (kIsWeb) {
+                // Web：用原生 <a download> 强制触发下载，避免 url_launcher
+                // 的 _self 跳转导致浏览器直接渲染二进制（看起来"没反应"）。
+                // ignore: avoid_web_libraries_in_flutter
+                final anchor = html.AnchorElement(href: url)
+                  ..setAttribute('download', '')
+                  ..target = '_blank';
+                html.document.body?.append(anchor);
+                anchor.click();
+                anchor.remove();
+              } else {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
               }
               if (context.mounted) Navigator.pop(context);
             }
