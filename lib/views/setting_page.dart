@@ -129,29 +129,36 @@ class SettingPage extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+                  // V1.4.1 修复：原本的 for + spread + 多个 Expanded 在 Flutter web
+                  // 上行为不可靠 (chromium 2026/150 上偶发只渲染 1 个 chip)。
+                  // 改为静态列出 3 个 Expanded 子元素，绕开 spread element 的边角问题。
                   child: Row(
                     children: [
-                      // V1.4.1 排查：先打印实际 children 数量，确认是 spread+for 没生成 3 个子元素，
-                      // 还是 layout 阶段把后面元素裁掉了。
-                      Builder(builder: (ctx) {
-                        final children = <Widget>[
-                          for (var i = 0; i < _languages.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 10),
-                            Expanded(
-                              child: _ThemePill(
-                                label: _languageLabels[i],
-                                active: currentLocale.languageCode ==
-                                        _languages[i].languageCode &&
-                                    currentLocale.countryCode ==
-                                        _languages[i].countryCode,
-                                onTap: () => context.setLocale(_languages[i]),
-                              ),
-                            ),
-                          ],
-                        ];
-                        debugPrint('[SettingPage] language Row children = ${children.length}');
-                        return Row(children: children);
-                      }),
+                      Expanded(
+                        child: _LanguagePill(
+                          label: _languageLabels[0],
+                          active: currentLocale.languageCode == 'zh' &&
+                              currentLocale.countryCode == 'CN',
+                          onTap: () => context.setLocale(_languages[0]),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _LanguagePill(
+                          label: _languageLabels[1],
+                          active: currentLocale.languageCode == 'zh' &&
+                              currentLocale.countryCode == 'TW',
+                          onTap: () => context.setLocale(_languages[1]),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _LanguagePill(
+                          label: _languageLabels[2],
+                          active: currentLocale.languageCode == 'en',
+                          onTap: () => context.setLocale(_languages[2]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -352,6 +359,46 @@ class _ThemePill extends StatelessWidget {
                 color: active ? ToDoColors.editPrimary : Colors.white,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// 白色卡片背景下的语言 chip — 配色与 _ThemePill 相反（白底灰边、active 用主题色填充）。
+class _LanguagePill extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _LanguagePill({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: active ? ToDoColors.editPrimary : Colors.transparent,
+            border: Border.all(
+              color: active ? ToDoColors.editPrimary : ToDoColors.divider,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : ToDoColors.textDark,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
           ),
         ),
