@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/category_model.dart';
 import '../models/todo_model.dart';
 
 /// Controller: owns the task list, exposes mutations, filtering, search,
@@ -147,6 +148,50 @@ class TaskController extends ChangeNotifier {
         .map((e) => TodoModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     _tasks = list;
+    notifyListeners();
+    await _persist();
+    return _tasks.length;
+  }
+
+  // ---- V1.2 全量导入 / 导出（任务 + 分类，跨平台可用）----
+
+  /// Build the full export payload (tasks + categories) as a JSON string.
+  /// [categories] comes from [CategoryController.categories].
+  String buildExportPayload(List<CategoryModel> categories) {
+    final payload = {
+      'app': 'todolist',
+      'version': 2,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'tasks': _tasks.map((t) => t.toJson()).toList(),
+      'categories': categories.map((c) => c.toJson()).toList(),
+    };
+    return jsonEncode(payload);
+  }
+
+  /// Write the full payload (tasks + categories) to a JSON file and return its path.
+  Future<String> exportAll(List<CategoryModel> categories) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final fileName =
+        'todolist_export_${DateTime.now().millisecondsSinceEpoch}.json';
+    final file = File('${dir.path}/$fileName');
+    await file.writeAsString(buildExportPayload(categories));
+    return file.path;
+  }
+
+  /// Replace current tasks AND categories from a backup file content.
+  /// Returns the number of imported tasks.
+  /// [onCategories] is invoked with imported categories (caller persists them).
+  Future<int> importAll(String content,
+      {required void Function(List<CategoryModel>) onCategories}) async {
+    final payload = _decode(content);
+    final tasks = (payload['tasks'] as List? ?? [])
+        .map((e) => TodoModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final categories = (payload['categories'] as List? ?? [])
+        .map((e) => CategoryModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    _tasks = tasks;
+    onCategories(categories);
     notifyListeners();
     await _persist();
     return _tasks.length;

@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../controllers/category_controller.dart';
 import '../controllers/task_controller.dart';
 import '../controllers/theme_controller.dart';
 import '../models/constants.dart';
@@ -16,6 +21,45 @@ class SettingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeController = context.watch<ThemeController>();
     final taskController = context.watch<TaskController>();
+    final categoryController = context.watch<CategoryController>();
+
+    Future<void> onExport() async {
+      try {
+        final path =
+            await taskController.exportAll(categoryController.categories);
+        if (!context.mounted) return;
+        final result = await Share.shareXFiles(
+          [XFile(path)],
+          subject: 'Todolist 备份文件',
+          text: '导出待办数据',
+        );
+        if (!context.mounted) return;
+        if (result.status == ShareResultStatus.success) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('已导出数据')));
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('导出失败：$e')));
+      }
+    }
+
+    Future<void> onImport() async {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (picked == null || picked.files.single.path == null) return;
+      final file = File(picked.files.single.path!);
+      if (!await file.exists()) return;
+      final content = await file.readAsString();
+      final count = await taskController.importAll(content,
+          onCategories: (cats) => categoryController.replaceAll(cats));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('已导入 $count 条任务')));
+    }
 
     return Scaffold(
       backgroundColor: ToDoColors.background,
@@ -68,6 +112,23 @@ class SettingPage extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            // 数据导入 / 导出 (V1.2)
+            _SectionCard(
+              children: [
+                _Row(
+                  icon: Icons.upload_outlined,
+                  title: '导出数据',
+                  onTap: onExport,
+                ),
+                const Divider(height: 1, color: ToDoColors.divider),
+                _Row(
+                  icon: Icons.download_outlined,
+                  title: '导入数据',
+                  onTap: onImport,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // Data management

@@ -61,6 +61,13 @@ class CategoryController extends ChangeNotifier {
     await _persist();
   }
 
+  /// Replace the whole category list (V1.2 全量导入).
+  Future<void> replaceAll(List<CategoryModel> categories) async {
+    _categories = List.from(categories);
+    notifyListeners();
+    await _persist();
+  }
+
   Map<String, dynamic> _decode(String s) =>
       Map<String, dynamic>.from(jsonDecode(s) as Map);
 }
