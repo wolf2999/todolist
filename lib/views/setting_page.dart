@@ -158,6 +158,43 @@ class SettingPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            // PWA 安装引导 (Web 平台可见)
+            if (kIsWeb)
+              _SectionCard(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.add_to_home_screen_outlined,
+                                color: ToDoColors.primary, size: 22),
+                            const SizedBox(width: 10),
+                            const Text('安装为 App',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          kIsWeb
+                              ? '在手机或电脑的浏览器中打开后，可通过系统菜单“添加到主屏幕”'
+                                  '把它安装成独立应用，离线也能使用。\n'
+                                  '· iPhone/iPad：Safari 底部“分享”→“添加到主屏幕”\n'
+                                  '· Android：右上“⋮”→“安装应用”\n'
+                                  '· macOS/Windows：地址栏右侧“安装”图标'
+                              : '',
+                          style: TextStyle(
+                              fontSize: 13, color: ToDoColors.textGrey, height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 16),
             // Data management
             _SectionCard(
               children: [

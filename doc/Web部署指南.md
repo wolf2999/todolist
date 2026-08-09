@@ -294,3 +294,35 @@ CF Pages → Deployments → 找到对应版本 → **Retry deployment**。
 - **限制访问**：CF Pages 项目 → Settings → Access policies（可加邮箱 OTP 验证，仅自己可访问）
 - **减体积**：构建加 `--web-renderer html`，从 29MB 降到 5MB
 - **绑定数据库**：要做云同步时，可接 Supabase / Cloudflare D1（前端纯客户端，避免后端维护）
+
+---
+
+## 11. PWA：把站点装成 App（免 Apple 开发者账号）
+
+todolist 的 Flutter Web 产物本身就是一个 **PWA（渐进式 Web 应用）**：
+- `manifest.json`：定义应用名、图标、全屏模式、主色（`#4A6CF7`）。
+- `flutter_service_worker.js`：Service Worker，缓存 `main.dart.js` / 资源，**离线也能打开已加载的页面**。
+- `web/icons/`：192 / 512 及 maskable 图标（取自 `assets/icon/icon.png`，与 App 一致）。
+
+### 11.1 怎么"安装"到主屏
+
+| 平台 | 操作 |
+|---|---|
+| **iPhone / iPad (Safari)** | 底部"分享" → **添加到主屏幕** → 主屏出现图标，点开是**全屏无地址栏**的独立 App |
+| **Android (Chrome)** | 右上"⋮" → **安装应用**（或地址栏右侧"安装"图标） |
+| **macOS / Windows** | 桌面端 Chrome/Edge 地址栏右侧"安装"图标 → 装成桌面应用 |
+
+> iOS 不会像 Android 那样自动弹"安装"横幅，需用户手动在分享菜单里"添加到主屏幕"。
+> 设置页已加"安装为 App"引导卡片（仅 Web 平台显示），说明上述步骤。
+
+### 11.2 注意事项
+
+- 数据仍存**浏览器本地**（shared_preferences 的 web 实现 = localStorage），换浏览器 / 清站点数据会丢。
+  跨设备迁移用设置页的 **导入/导出 JSON**（V1.2）完成。
+- 离线缓存只缓存**已加载过的资源**；首次打开需联网，之后断网可用。
+- 不能上 App Store，只能"添加到主屏"——对个人/小范围自用完全足够，且**不需要 $99 的 Apple 开发者账号**。
+
+### 11.3 改了 PWA 资源后部署
+
+`web/manifest.json`、`web/index.html`、`web/icons/*` 都属于 `web/` 目录，随 `flutter build web` 一起打进 `build/web`。
+改完直接 `git push`，CF 自动重建即生效。
