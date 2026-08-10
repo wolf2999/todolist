@@ -54,16 +54,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // V1.4.2 修复：直接在 MaterialApp 内部用 context.watch<ThemeController>()
-    // 读取主题模式，而不要用 Consumer<ThemeController> 把 MaterialApp 包一层。
-    // 原因：EasyLocalization 的 setLocale() 通过重建其子树来传播 locale 变化；
-    // 如果 MaterialApp 被 Consumer 这一层 builder 包裹且自身不依赖 locale，
-    // 在某些 Flutter 版本下 locale 变化不会冒泡到 MaterialApp 从而不会重建
-    // 子树里的 .tr() —— 表现为"只有当前页面切了语言，其它页面没切"。
-    // 现在 locale / supportedLocales / delegates 都直接读 context.*，
-    // themeMode 也读 context.watch，保证 locale 变化时整棵子树一起重建。
-    final themeMode = context.watch<ThemeController>().themeMode;
-
     return MultiProvider(
       providers: [
         // V1.4 优化 C: 延后数据加载。Controllers 的 load() 改为首次 build 后再异步执行，
@@ -72,20 +62,27 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CategoryController()),
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
       ],
-      child: _Bootstrap(
-        child: MaterialApp(
+      // V1.4.4 修复：ThemeController 的读取必须放在 MultiProvider 内部的节点上，
+      // 之前的写法 `context.watch<ThemeController>()` 在 runApp 返回的根 build 中执行，
+      // 当时的 context 还在 Provider 树之上，导致 Provider.uninitialized 抛错、
+      // Flutter 渲染进 error widget，画面卡在 splash 的 "T" logo 上不前进。
+      // 现在用 MaterialApp.builder 拿到 MultiProvider 子树内的 context 来读，
+      // 既能响应主题变化，又不会触发初始化顺序错误。
+      child: Builder(builder: (innerContext) {
+        final themeMode = innerContext.watch<ThemeController>().themeMode;
+        return MaterialApp(
           title: 'appTitle'.tr(),
           debugShowCheckedModeBanner: false,
           // Locale is driven by EasyLocalization (follows system on first run,
           // remembers the user's choice afterwards).
-          locale: context.locale,
-          supportedLocales: context.supportedLocales,
-          // V1.4 修复：必须使用 context.localizationDelegates —— 它内部已经
+          locale: innerContext.locale,
+          supportedLocales: innerContext.supportedLocales,
+          // V1.4 修复：必须使用 innerContext.localizationDelegates —— 它内部已经
           // 包含了 easy_localization 的 _EasyLocalizationDelegate，MaterialApp
           // 才会触发它的 load() 来加载翻译 JSON（RootBundleAssetLoader）。
           // 之前只放了 Global* delegates，导致 _EasyLocalizationDelegate.load
           // 永远没被调用，translations 一直为 null，所有 .tr() 回退到 key。
-          localizationsDelegates: context.localizationDelegates,
+          localizationsDelegates: innerContext.localizationDelegates,
           theme: buildTheme(),
           darkTheme: ThemeData.dark().copyWith(
             primaryColor: Colors.deepPurple,
@@ -97,8 +94,8 @@ class MyApp extends StatelessWidget {
             '/': (context) => const Onboarding(),
             '/main': (context) => const AppShell(),
           },
-        ),
-      ),
+        );
+      }),
     );
   }
 }
