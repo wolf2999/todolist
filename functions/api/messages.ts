@@ -3,17 +3,21 @@
 // POST -> 新增留言（含 IP 时间窗口限流 + 长度校验）
 //
 // 环境变量（见 wrangler.toml）：
-//   DB               D1 绑定
-//   RATE_WINDOW_MS   同 IP 发帖最小间隔 (ms)
-//   RATE_DAILY_LIMIT 同 IP 每天最多条数
-//   MAX_LENGTH       单条最大字符数
+//   DB  D1 绑定
+//
+// 限流参数为业务固定值，直接写在代码里（Pages Functions 不会从
+// wrangler.toml 的 [vars] 注入普通变量，只能注入绑定与 secret）。
 
 interface Env {
   DB: D1Database;
-  RATE_WINDOW_MS: number;
-  RATE_DAILY_LIMIT: number;
-  MAX_LENGTH: number;
 }
+
+// 同 IP 发帖最小间隔 (ms)
+const RATE_WINDOW_MS = 60000;
+// 同 IP 每天最多条数
+const RATE_DAILY_LIMIT = 50;
+// 单条最大字符数
+const MAX_LENGTH = 500;
 
 function getClientIp(request: Request): string {
   // CF 真实访客 IP；不能直接用 x-forwarded-for（可被伪造）
@@ -61,13 +65,13 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }) => {
   ).bind(ip).first<{ count: number; day: string; last_post: number }>();
 
   // 2) 时间窗口限制（60 秒内最多 1 条）
-  if (row && row.day === today && now - row.last_post < env.RATE_WINDOW_MS) {
-    const wait = Math.ceil((env.RATE_WINDOW_MS - (now - row.last_post)) / 1000);
+  if (row && row.day === today && now - row.last_post < RATE_WINDOW_MS) {
+    const wait = Math.ceil((RATE_WINDOW_MS - (now - row.last_post)) / 1000);
     return json({ error: `发帖太频繁，请 ${wait}s 后再试。` }, 429);
   }
 
   // 3) 每日总量限制
-  if (row && row.day === today && row.count >= env.RATE_DAILY_LIMIT) {
+  if (row && row.day === today && row.count >= RATE_DAILY_LIMIT) {
     return json({ error: '今日留言次数已达上限，明天再来吧。' }, 429);
   }
 
@@ -80,8 +84,8 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }) => {
   }
   const content = (body.content || '').trim();
   if (!content) return json({ error: '留言内容不能为空。' }, 400);
-  if (content.length > env.MAX_LENGTH) {
-    return json({ error: `留言过长（最多 ${env.MAX_LENGTH} 字）。` }, 400);
+  if (content.length > MAX_LENGTH) {
+    return json({ error: `留言过长（最多 ${MAX_LENGTH} 字）。` }, 400);
   }
 
   // 5) 入库

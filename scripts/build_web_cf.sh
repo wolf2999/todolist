@@ -41,4 +41,10 @@ if [ -f "web/message_board.html" ]; then
   echo ">>> 已拷贝 message_board.html -> build/web/"
 fi
 
+# 6) 拷贝 _routes.json，声明 /api/* 走 Functions（避免被 SPA fallback 拦截 GET）。
+if [ -f "web/_routes.json" ]; then
+  cp web/_routes.json build/web/_routes.json
+  echo ">>> 已拷贝 _routes.json -> build/web/"
+fi
+
 echo ">>> CF build done. Output: build/web"

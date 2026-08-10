@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/api/messages", "/api/messages/*", "/api/admin/delete", "/api/admin/delete/*"],
+  "exclude": []
+}
