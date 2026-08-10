@@ -11,7 +11,15 @@ import '../models/constants.dart';
 class CategoryController extends ChangeNotifier {
   static const String _storageKey = 'todolist.categories.v1';
 
-  List<CategoryModel> _categories = [];
+  // 构造时同步 seed 预设分类。原因：Controller 在 Provider.create 时同步构造，
+  // 而 CategoryController.load() 是异步（postFrameCallback）。
+  // 如果 `_categories = []`，则在 IndexedStack 第一次 build CategoryPage 时，
+  // load() 还没跑完——画面会短暂/永久空白。
+  // 这里直接同步填充 BuiltInCategories（不论 localStorage 有没有），后续
+  // load() 异步从 localStorage 读取并覆盖（如果读到非空列表）。
+  List<CategoryModel> _categories = BuiltInCategories.list
+      .map((m) => CategoryModel(id: m['id']!, name: m['name']!))
+      .toList();
 
   List<CategoryModel> get categories => List.unmodifiable(_categories);
 
