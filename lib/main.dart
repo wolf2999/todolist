@@ -54,6 +54,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // V1.4.2 修复：直接在 MaterialApp 内部用 context.watch<ThemeController>()
+    // 读取主题模式，而不要用 Consumer<ThemeController> 把 MaterialApp 包一层。
+    // 原因：EasyLocalization 的 setLocale() 通过重建其子树来传播 locale 变化；
+    // 如果 MaterialApp 被 Consumer 这一层 builder 包裹且自身不依赖 locale，
+    // 在某些 Flutter 版本下 locale 变化不会冒泡到 MaterialApp 从而不会重建
+    // 子树里的 .tr() —— 表现为"只有当前页面切了语言，其它页面没切"。
+    // 现在 locale / supportedLocales / delegates 都直接读 context.*，
+    // themeMode 也读 context.watch，保证 locale 变化时整棵子树一起重建。
+    final themeMode = context.watch<ThemeController>().themeMode;
+
     return MultiProvider(
       providers: [
         // V1.4 优化 C: 延后数据加载。Controllers 的 load() 改为首次 build 后再异步执行，
@@ -63,32 +73,30 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
       ],
       child: _Bootstrap(
-        child: Consumer<ThemeController>(
-          builder: (context, themeController, _) => MaterialApp(
-            title: 'appTitle'.tr(),
-            debugShowCheckedModeBanner: false,
-            // Locale is driven by EasyLocalization (follows system on first run,
-            // remembers the user's choice afterwards).
-            locale: context.locale,
-            supportedLocales: context.supportedLocales,
-            // V1.4 修复：必须使用 context.localizationDelegates —— 它内部已经
-            // 包含了 easy_localization 的 _EasyLocalizationDelegate，MaterialApp
-            // 才会触发它的 load() 来加载翻译 JSON（RootBundleAssetLoader）。
-            // 之前只放了 Global* delegates，导致 _EasyLocalizationDelegate.load
-            // 永远没被调用，translations 一直为 null，所有 .tr() 回退到 key。
-            localizationsDelegates: context.localizationDelegates,
-            theme: buildTheme(),
-            darkTheme: ThemeData.dark().copyWith(
-              primaryColor: Colors.deepPurple,
-              scaffoldBackgroundColor: const Color(0xFF15171E),
-            ),
-            themeMode: themeController.themeMode,
-            initialRoute: '/',
-            routes: {
-              '/': (context) => const Onboarding(),
-              '/main': (context) => const AppShell(),
-            },
+        child: MaterialApp(
+          title: 'appTitle'.tr(),
+          debugShowCheckedModeBanner: false,
+          // Locale is driven by EasyLocalization (follows system on first run,
+          // remembers the user's choice afterwards).
+          locale: context.locale,
+          supportedLocales: context.supportedLocales,
+          // V1.4 修复：必须使用 context.localizationDelegates —— 它内部已经
+          // 包含了 easy_localization 的 _EasyLocalizationDelegate，MaterialApp
+          // 才会触发它的 load() 来加载翻译 JSON（RootBundleAssetLoader）。
+          // 之前只放了 Global* delegates，导致 _EasyLocalizationDelegate.load
+          // 永远没被调用，translations 一直为 null，所有 .tr() 回退到 key。
+          localizationsDelegates: context.localizationDelegates,
+          theme: buildTheme(),
+          darkTheme: ThemeData.dark().copyWith(
+            primaryColor: Colors.deepPurple,
+            scaffoldBackgroundColor: const Color(0xFF15171E),
           ),
+          themeMode: themeMode,
+          initialRoute: '/',
+          routes: {
+            '/': (context) => const Onboarding(),
+            '/main': (context) => const AppShell(),
+          },
         ),
       ),
     );
@@ -141,19 +149,17 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      Home(onOpenSettings: () => _goTo(2)),
-      const CategoryPage(),
-      const SettingPage(),
-    ];
-  }
-
   void _goTo(int i) => setState(() => _index = i);
+
+  // V1.4.2 修复：页面列表在 build 中创建（而非 initState 缓存），确保 locale
+  // 变化时整棵子树连同 IndexedStack 内被缓存的页面一起用新 locale 重建。
+  // 否则 initState 里缓存的页面实例会保留旧 Localizations 上下文，导致切语言
+  // 后只有当前显示的页面更新、其它页面（含底部 Tab 未激活页）仍是旧语言。
+  List<Widget> get _pages => [
+        Home(onOpenSettings: () => _goTo(2)),
+        const CategoryPage(),
+        const SettingPage(),
+      ];
 
   @override
   Widget build(BuildContext context) {
