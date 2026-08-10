@@ -222,6 +222,19 @@ class SettingPage extends StatelessWidget {
                   title: 'importData'.tr(),
                   onTap: onImport,
                 ),
+                const Divider(height: 1, color: ToDoColors.divider),
+                _Row(
+                  icon: Icons.forum_outlined,
+                  title: 'messageBoard'.tr(),
+                  // 留言板以独立 HTML 页面部署，新窗口打开 (CF Pages 静态托管)。
+                  // 在 Web 上调用 window.open；非 Web 直接占位提示，避免误触。
+                  onTap: () {
+                    if (kIsWeb) {
+                      // ignore: avoid_web_libraries_in_flutter
+                      html.window.open('/message_board.html', '_blank');
+                    }
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -305,8 +318,6 @@ class SettingPage extends StatelessWidget {
             _SectionCard(
               children: [
                 _Row(icon: Icons.info_outline, title: 'version'.tr()),
-                const Divider(height: 1, color: ToDoColors.divider),
-                _Row(icon: Icons.lock_outline, title: 'privacy'.tr()),
               ],
             ),
             const SizedBox(height: 20),

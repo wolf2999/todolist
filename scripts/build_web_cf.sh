@@ -33,4 +33,12 @@ flutter pub get
 # 4) 构建 Web release 产物 (Flutter 3.29+ 渲染器按平台自动选择, 无需额外参数)
 flutter build web --release
 
+# 5) 拷贝独立于 Flutter 的静态页面 (留言板) 到产物根。
+#    flutter build web 会清空 build/web/ 重建，所以必须在 build 之后拷贝，
+#    否则 message_board.html 会被删掉、/message_board.html 访问 404。
+if [ -f "web/message_board.html" ]; then
+  cp web/message_board.html build/web/message_board.html
+  echo ">>> 已拷贝 message_board.html -> build/web/"
+fi
+
 echo ">>> CF build done. Output: build/web"

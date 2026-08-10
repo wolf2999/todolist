@@ -88,3 +88,59 @@ flutter run -d ios
 ## 贡献
 
 欢迎提交 Issue、Pull Request 或功能建议。
+
+## 留言板（Cloudflare Pages + D1）
+
+设置页「导入数据」下方新增了「留言板」入口，点击会在**新浏览器窗口**打开一个轻量的独立页面，
+任何人无需登录即可留言。后端由 Cloudflare Pages Functions + D1 实现，零服务器运维。
+
+### 架构
+- `functions/api/messages.ts`：GET 返回最近 100 条留言；POST 新增（含 IP 时间窗口限流 + 长度校验）。
+- `functions/api/admin/delete.ts`：受 `x-admin-key` 保护的删除接口，用于清理无用/垃圾留言。
+- `migrations/0001_init.sql`：D1 表结构（`messages` + `rate_limits`）。
+- `web/message_board.html`：独立留言板前端（不依赖 Flutter，由构建脚本拷贝到产物根）。
+- `wrangler.toml`：D1 绑定与限流参数。
+
+### 部署步骤
+```bash
+# 1. 安装并登录 wrangler
+npm i -g wrangler
+wrangler login
+
+# 2. 创建 D1 数据库（记下输出的 database_id，填入 wrangler.toml 的 database_id）
+wrangler d1 create todolist_messages
+
+# 3. 执行迁移建表
+wrangler d1 execute todolist_messages --file=./migrations/0001_init.sql --remote
+
+# 4. 设置管理密钥（删除接口用，切勿写进代码仓库）
+wrangler secret put ADMIN_KEY
+
+# 5. 在 Cloudflare Pages 控制台设置：
+#    Build command :  ./scripts/build_web_cf.sh
+#    Build output :   build/web
+#    并绑定 D1 数据库（名称 todolist_messages，变量名 DB）
+```
+
+### 后台清理留言
+两种方式任选：
+- **CF 控制台**：Storage & Databases → D1 → 你的数据库 → Console，直接跑 SQL：
+  ```sql
+  SELECT * FROM messages ORDER BY created_at DESC LIMIT 50;
+  DELETE FROM messages WHERE id = 123;
+  ```
+- **删除接口**（批量）：
+  ```bash
+  curl -X POST https://<你的域名>/api/admin/delete \
+    -H "x-admin-key: <ADMIN_KEY>" \
+    -H "content-type: application/json" \
+    -d '{"ids":[1,2,3]}'
+  ```
+
+### 限流策略（免费额度内）
+- 同一 IP **60 秒内最多 1 条**（时间窗口，见 `wrangler.toml` 的 `RATE_WINDOW_MS`）。
+- 同一 IP **每天最多 50 条**（自然日重置，见 `RATE_DAILY_LIMIT`）。
+- 单条最长 500 字（`MAX_LENGTH`）。
+- 真实 IP 取自 `cf-connecting-ip`（不信任 `x-forwarded-for`，防伪造）。
+
+> 提示：匿名公开留言可能被机器人刷，如需更强防护可后续接入 Cloudflare Turnstile（免费）。

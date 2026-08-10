@@ -1,0 +1,29 @@
+# Cloudflare Pages + D1 绑定配置
+# 用法：
+#   1. 安装 wrangler: npm i -g wrangler
+#   2. 登录:           wrangler login
+#   3. 建数据库:       wrangler d1 create todolist_messages
+#      （记下输出的 database_id，贴到下面的 database_id）
+#   4. 执行迁移:       wrangler d1 execute todolist_messages --file=./migrations/0001_init.sql --remote
+#   5. 设管理密钥:     wrangler secret put ADMIN_KEY   （删除接口用）
+#
+# 本地预览（需先 build web 到 build/）：
+#   wrangler pages dev build --binding ... （D1 本地用 --d1 指定）
+
+name = "todolist"
+pages_build_output_dir = "build/web"
+
+# D1 数据库绑定（Functions 内用 env.DB 访问）
+[[d1_databases]]
+binding = "DB"
+database_name = "todolist_messages"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# 环境变量（非敏感项可放这里；ADMIN_KEY 请用 wrangler secret put，勿写此文件）
+[vars]
+# 单 IP 时间窗口限制：60 秒内最多 1 条
+RATE_WINDOW_MS = 60000
+# 单 IP 每天最多发帖数
+RATE_DAILY_LIMIT = 50
+# 单条留言最大长度
+MAX_LENGTH = 500
