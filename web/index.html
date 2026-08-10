@@ -85,10 +85,45 @@
   <script src="flutter_bootstrap.js" async></script>
 
   <script>
+    // V1.4.4 修复：Flutter Web 渲染后会向 body 注入 <flt-glass-pane>。
+    // 之前依赖 Dart 端 _Bootstrap._removeHtmlSplash() 移除 #loading，
+    // 但实测在某些场景下（构建产物未覆盖、CDN 缓存旧版）该方法不执行，
+    // 导致 splash 永远盖在 Flutter 内容之上看上去 "卡死"。
+    // 这里用 MutationObserver 监听 body 子节点，检测到 Flutter 把
+    // 自身的 canvas/glass-pane 接管 DOM 时立即移除 splash，不再依赖 Dart 端。
+    (function () {
+      const loading = document.getElementById('loading');
+      if (!loading) return;
+      const remove = function () {
+        if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
+      };
+      // 判定 Flutter 已接管：body 或 documentElement 下出现 flt-glass-pane / flt-scene-host / canvas 等
+      function flutterReady() {
+        if (document.querySelector('flt-glass-pane, flt-scene-host, flutter-view')) return true;
+        if (document.getElementsByTagName('canvas').length > 0) return true;
+        return false;
+      }
+      // 兜底：直接尝试轮询一次（早期阶段 DOM 可能还没批量同步）
+      const obs = new MutationObserver(function () {
+        if (flutterReady()) {
+          remove();
+          obs.disconnect();
+        }
+      });
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+      // 双保险：兜底定时器，最多 15 秒后强制移除首屏占位。
+      // 如果 Flutter 没起来，也不会一直糊在脸上，用户能直接看到首屏内容或页面错误。
+      setTimeout(function () {
+        obs.disconnect();
+        remove();
+      }, 15000);
+    })();
+  </script>
+
+  <script>
     // V1.4 优化 B：错误兜底。
     // 浏览器翻译插件（如 Immersive Translate）有时会与 Flutter 引擎冲突，
-    // 导致页面卡在 splash。本段捕获全局 JS 错误并在 8 秒后仍无首帧
-    // 时弹出可读提示，让用户能区分"加载慢"和"真的出问题"。
+    // 导致页面卡在 splash。本段捕获全局 JS 错误并弹可读提示。
     (function () {
       const loading = document.getElementById('loading');
       const tip = loading ? loading.querySelector('.tip') : null;
@@ -102,25 +137,14 @@
           '<small style="opacity:.7">' + hint + '</small>' +
           '<br><button onclick="location.reload()">重新加载</button>';
       }
-      // 1) 同步 JS 错误（含翻译插件覆盖 Object.f 等）
       window.addEventListener('error', function (e) {
         showError((e && e.message) || 'unknown error',
           '如果是浏览器翻译插件导致，请关闭后刷新，或打开无痕窗口访问。');
       });
-      // 2) 未处理的 Promise 拒绝（例如 main.dart.js 加载失败）
       window.addEventListener('unhandledrejection', function (e) {
         showError((e && e.reason && (e.reason.message || e.reason.toString())) || 'load failed',
           '请检查网络，刷新页面重试。');
       });
-      // 3) 兜底：8 秒后如果 loading 还可见（说明 Flutter 未接管首帧），提示用户继续等或检查
-      setTimeout(function () {
-        if (!reported && loading && loading.isConnected && document.body.contains(loading)) {
-          // 不强制报错误，只更新提示让用户知道在等（避免误报慢网络）
-          if (tip && /加载中/.test(tip.textContent)) {
-            tip.innerHTML = '首屏加载较慢，请稍候…<br><small style="opacity:.7">若长时间空白，可关闭浏览器翻译插件后刷新。</small>';
-          }
-        }
-      }, 8000);
     })();
   </script>
 </body>
