@@ -148,15 +148,19 @@ class _AppShellState extends State<AppShell> {
 
   void _goTo(int i) => setState(() => _index = i);
 
-  // V1.4.2 修复：页面列表在 build 中创建（而非 initState 缓存），确保 locale
-  // 变化时整棵子树连同 IndexedStack 内被缓存的页面一起用新 locale 重建。
-  // 否则 initState 里缓存的页面实例会保留旧 Localizations 上下文，导致切语言
-  // 后只有当前显示的页面更新、其它页面（含底部 Tab 未激活页）仍是旧语言。
-  List<Widget> get _pages => [
-        Home(onOpenSettings: () => _goTo(2)),
-        const CategoryPage(),
-        const SettingPage(),
-      ];
+  // V1.4.5 修复：每个页面加 ValueKey(locale.toString())，强制 IndexedStack 在
+  // locale 变化时 dispose/recreate 所有子页面（连同它们持有的 State、tab 控制器、
+  // 缓存数据），从而保证整棵底部导航及所有未激活 Tab 都用新 locale 重建。
+  // 没有 Key 的话 Flutter 会复用 State，旧 Locale InheritedWidget 仍然挂在
+  // 那些 State 的 context 上，导致只有当前显示页 .tr() 跟着切、其它页全是旧语言。
+  List<Widget> get _pages {
+    final loc = context.locale.toString();
+    return [
+      Home(key: ValueKey('home-$loc'), onOpenSettings: () => _goTo(2)),
+      CategoryPage(key: ValueKey('cat-$loc')),
+      SettingPage(key: ValueKey('set-$loc')),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

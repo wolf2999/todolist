@@ -12,8 +12,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../controllers/category_controller.dart';
 import '../controllers/task_controller.dart';
-import '../controllers/theme_controller.dart';
-import '../models/constants.dart';
 import '../utils/colors.dart';
 
 /// Settings screen (UI4 1:1 还原).
@@ -36,7 +34,6 @@ class SettingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = context.watch<ThemeController>();
     final taskController = context.watch<TaskController>();
     final categoryController = context.watch<CategoryController>();
     final currentLocale = context.locale;
@@ -165,49 +162,6 @@ class SettingPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Appearance
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [ToDoColors.editPrimary, ToDoColors.editPrimaryDark],
-                ),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('theme'.tr(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ThemePill(
-                          label: 'darkMode'.tr(),
-                          active: themeController.mode == AppThemeMode.dark,
-                          onTap: () =>
-                              themeController.setMode(AppThemeMode.dark),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ThemePill(
-                          label: 'followSystem'.tr(),
-                          active: themeController.mode == AppThemeMode.system,
-                          onTap: () =>
-                              themeController.setMode(AppThemeMode.system),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
             // 数据导入 / 导出 (V1.2)
             _SectionCard(
               children: [
@@ -235,6 +189,7 @@ class SettingPage extends StatelessWidget {
                     }
                   },
                 ),
+                const Divider(height: 1, color: ToDoColors.divider),
                 _Row(
                   icon: Icons.admin_panel_settings_outlined,
                   title: 'messageBoardAdmin'.tr(),
@@ -352,40 +307,6 @@ class SettingPage extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ThemePill extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _ThemePill({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
-          decoration: BoxDecoration(
-            color: active
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: active ? ToDoColors.editPrimary : Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      );
 }
 
 /// 白色卡片背景下的语言 chip — 配色与 _ThemePill 相反（白底灰边、active 用主题色填充）。

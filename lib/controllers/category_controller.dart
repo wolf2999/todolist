@@ -25,8 +25,10 @@ class CategoryController extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_storageKey);
-    if (raw == null) {
-      // Seed built-in categories on first launch.
+    if (raw == null || raw.isEmpty) {
+      // Seed built-in categories on first launch OR when the stored list is
+      // empty (e.g. corrupted / cleared state). 空列表视为异常态，恢复预设，
+      // 避免分类页永久空白。用户仍可在 App 内逐个删除。
       _categories = BuiltInCategories.list
           .map((m) => CategoryModel(id: m['id']!, name: m['name']!))
           .toList();
