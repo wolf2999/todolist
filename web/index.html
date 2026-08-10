@@ -45,6 +45,7 @@
       align-items: center; justify-content: center;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #4A6CF7;
+      z-index: 9999;
     }
     #loading .logo {
       width: 72px; height: 72px; border-radius: 20px;
@@ -60,6 +61,17 @@
       0%, 100% { transform: scale(1); opacity: 1; }
       50%      { transform: scale(0.92); opacity: 0.75; }
     }
+    /* 错误态：splash 被替换为可读错误 */
+    #loading.error .logo { background: #ff5b5b; animation: none; }
+    #loading.error .name { color: #ff5b5b; }
+    #loading.error .tip  { color: #555; max-width: 80vw; text-align: center; line-height: 1.5; }
+    #loading.error .tip button {
+      margin-top: 14px;
+      padding: 8px 18px;
+      border: none; border-radius: 8px;
+      background: #4A6CF7; color: #fff; font-size: 14px;
+      cursor: pointer; font-family: inherit;
+    }
   </style>
 </head>
 <body>
@@ -71,5 +83,45 @@
   </div>
 
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // V1.4 优化 B：错误兜底。
+    // 浏览器翻译插件（如 Immersive Translate）有时会与 Flutter 引擎冲突，
+    // 导致页面卡在 splash。本段捕获全局 JS 错误并在 8 秒后仍无首帧
+    // 时弹出可读提示，让用户能区分"加载慢"和"真的出问题"。
+    (function () {
+      const loading = document.getElementById('loading');
+      const tip = loading ? loading.querySelector('.tip') : null;
+      let reported = false;
+      function showError(msg, hint) {
+        if (reported || !tip) return;
+        reported = true;
+        loading.classList.add('error');
+        const safe = String(msg).replace(/[<&>]/g, c => ({'<':'&lt;','&':'&amp;','>':'&gt;'})[c]);
+        tip.innerHTML = '页面初始化失败<br><small style="opacity:.7">' + safe + '</small><br>' +
+          '<small style="opacity:.7">' + hint + '</small>' +
+          '<br><button onclick="location.reload()">重新加载</button>';
+      }
+      // 1) 同步 JS 错误（含翻译插件覆盖 Object.f 等）
+      window.addEventListener('error', function (e) {
+        showError((e && e.message) || 'unknown error',
+          '如果是浏览器翻译插件导致，请关闭后刷新，或打开无痕窗口访问。');
+      });
+      // 2) 未处理的 Promise 拒绝（例如 main.dart.js 加载失败）
+      window.addEventListener('unhandledrejection', function (e) {
+        showError((e && e.reason && (e.reason.message || e.reason.toString())) || 'load failed',
+          '请检查网络，刷新页面重试。');
+      });
+      // 3) 兜底：8 秒后如果 loading 还可见（说明 Flutter 未接管首帧），提示用户继续等或检查
+      setTimeout(function () {
+        if (!reported && loading && loading.isConnected && document.body.contains(loading)) {
+          // 不强制报错误，只更新提示让用户知道在等（避免误报慢网络）
+          if (tip && /加载中/.test(tip.textContent)) {
+            tip.innerHTML = '首屏加载较慢，请稍候…<br><small style="opacity:.7">若长时间空白，可关闭浏览器翻译插件后刷新。</small>';
+          }
+        }
+      }, 8000);
+    })();
+  </script>
 </body>
 </html>
