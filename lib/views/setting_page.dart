@@ -235,6 +235,18 @@ class SettingPage extends StatelessWidget {
                     }
                   },
                 ),
+                _Row(
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: 'messageBoardAdmin'.tr(),
+                  // 管理页需要管理员密钥；密钥不写入客户端（避免被反编译泄露），
+                  // 打开后手动粘贴密钥即可。便捷 URL（带 ?key=）可自行收藏本机使用。
+                  onTap: () {
+                    if (kIsWeb) {
+                      // ignore: avoid_web_libraries_in_flutter
+                      html.window.open('/message_board_admin.html', '_blank');
+                    }
+                  },
+                ),
               ],
             ),
             const SizedBox(height: 16),

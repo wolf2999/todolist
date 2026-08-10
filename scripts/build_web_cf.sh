@@ -40,6 +40,10 @@ if [ -f "web/message_board.html" ]; then
   cp web/message_board.html build/web/message_board.html
   echo ">>> 已拷贝 message_board.html -> build/web/"
 fi
+if [ -f "web/message_board_admin.html" ]; then
+  cp web/message_board_admin.html build/web/message_board_admin.html
+  echo ">>> 已拷贝 message_board_admin.html -> build/web/"
+fi
 
 # 6) 拷贝 _routes.json，声明 /api/* 走 Functions（避免被 SPA fallback 拦截 GET）。
 if [ -f "web/_routes.json" ]; then

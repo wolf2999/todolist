@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>留言板管理 · atodolist</title>
+  <meta name="referrer" content="no-referrer" />
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f6fa;color:#222}
+    .wrap{max-width:960px;margin:0 auto;padding:24px 16px}
+    h1{margin:0 0 8px;font-size:20px}
+    .desc{color:#666;font-size:13px;margin-bottom:16px}
+    .auth{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+    .auth input{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+    .auth button{padding:8px 14px;border:0;border-radius:8px;background:#4A6CF7;color:#fff;cursor:pointer;font-size:13px}
+    .auth button:hover{background:#3956d8}
+    .toolbar{display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:wrap}
+    .toolbar input{padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;flex:1;min-width:200px}
+    .toolbar button{padding:7px 14px;border:0;border-radius:8px;background:#4A6CF7;color:#fff;cursor:pointer;font-size:13px}
+    .toolbar button.danger{background:#e74c3c}
+    .toolbar button.danger:hover{background:#c0392b}
+    .toolbar button.ghost{background:#fff;color:#222;border:1px solid #ddd}
+    .toolbar button.ghost:hover{background:#f0f0f0}
+    .toolbar .count{color:#666;font-size:13px;margin-left:auto}
+    .list{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+    .item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #eee;align-items:flex-start}
+    .item:last-child{border-bottom:0}
+    .item input[type=checkbox]{margin-top:4px;width:18px;height:18px;cursor:pointer;flex-shrink:0}
+    .item .body{flex:1;min-width:0}
+    .item .content{font-size:14px;line-height:1.5;word-break:break-word;margin-bottom:6px}
+    .item .meta{font-size:12px;color:#888;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .item .id{font-family:monospace;background:#eee;padding:1px 6px;border-radius:4px;font-size:11px}
+    .empty{padding:48px;text-align:center;color:#999}
+    .empty .icon{font-size:48px;opacity:.4;margin-bottom:8px}
+    .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999}
+    .toast.show{opacity:1}
+    .toast.error{background:#e74c3c}
+    .toast.ok{background:#27ae60}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>留言板管理</h1>
+  <div class="desc">输入管理员密钥进入。密钥仅保存在本次浏览器，关闭页面即销毁。</div>
+
+  <div class="auth" id="authBox">
+    <input id="keyInput" type="password" placeholder="ADMIN_KEY（通过 wrangler secret 或 CF 控制台设置）" />
+    <button id="authBtn">进入</button>
+  </div>
+
+  <div id="main" style="display:none">
+    <div class="toolbar">
+      <input id="filter" placeholder="过滤关键字（仅本地过滤，不删数据）…" />
+      <button class="ghost" id="refreshBtn">刷新</button>
+      <span class="count" id="count"></span>
+      <button class="danger" id="delBtn">删除选中</button>
+    </div>
+    <div class="list" id="list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const toast = (msg, type='') => {
+    const t = $('toast');
+    t.className = 'toast show ' + type;
+    t.textContent = msg;
+    setTimeout(() => t.className = 'toast ' + type, 2200);
+  };
+  let KEY = sessionStorage.getItem('msg_admin_key') || '';
+  let msgs = [];
+  let selected = new Set();
+  let filterKw = '';
+
+  // 支持 ?key=xxxx 直接进入（便捷入口）。注意：URL 会被浏览器历史记录，
+  // 仅限本机使用，不要分享给任何人。读取后用 history.replaceState 抹除，
+  // 避免密钥残留在地址栏/历史里。
+  if (!KEY) {
+    const params = new URLSearchParams(location.search);
+    const urlKey = params.get('key');
+    if (urlKey) {
+      KEY = urlKey;
+      history.replaceState({}, '', location.pathname); // 抹掉 ?key=
+    }
+  }
+
+  const fmtTime = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts > 1e12 ? ts : ts * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+
+  async function api(method, body) {
+    const opts = { method, headers: { 'x-admin-key': KEY } };
+    if (body) {
+      opts.headers['content-type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const r = await fetch('./api/messages', opts).catch(()=>null);
+    return r;
+  }
+
+  async function apiAdmin(body) {
+    const r = await fetch('./api/admin/delete', {
+      method: 'POST',
+      headers: { 'x-admin-key': KEY, 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return await r.json().catch(() => ({ error: '响应解析失败' }));
+  }
+
+  async function load() {
+    selected.clear();
+    const r = await api('GET');
+    if (!r || !r.ok) {
+      $('list').innerHTML = '<div class="empty"><div class="icon">⚠️</div>加载失败</div>';
+      return;
+    }
+    const j = await r.json();
+    msgs = (j.messages || []).slice().sort((a,b) => (b.id || 0) - (a.id || 0));
+    render();
+  }
+
+  function render() {
+    const filtered = filterKw
+      ? msgs.filter(m => (m.content||'').toLowerCase().includes(filterKw.toLowerCase()))
+      : msgs;
+    $('count').textContent = filterKw
+      ? `${filtered.length} / ${msgs.length} 条`
+      : `共 ${msgs.length} 条`;
+    if (filtered.length === 0) {
+      $('list').innerHTML = '<div class="empty"><div class="icon">📭</div>暂无留言</div>';
+      return;
+    }
+    $('list').innerHTML = filtered.map(m => `
+      <div class="item" data-id="${m.id}">
+        <input type="checkbox" ${selected.has(m.id)?'checked':''} data-id="${m.id}"/>
+        <div class="body">
+          <div class="content">${escapeHtml(m.content)}</div>
+          <div class="meta">
+            <span class="id">#${m.id}</span>
+            <span>${fmtTime(m.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    $('list').querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const id = +e.target.dataset.id;
+        if (e.target.checked) selected.add(id); else selected.delete(id);
+        $('delBtn').textContent = selected.size > 0
+          ? `删除选中 (${selected.size})` : '删除选中';
+      });
+    });
+  }
+
+  $('keyInput').value = KEY;
+  function enter(key) {
+    KEY = key.trim();
+    if (!KEY) { toast('请输入密钥', 'error'); return; }
+    sessionStorage.setItem('msg_admin_key', KEY);
+    $('authBox').style.display = 'none';
+    $('main').style.display = 'block';
+    load();
+  }
+  // URL 带了 ?key= 直接自动进入（无需手动粘贴密钥）
+  if (KEY) enter(KEY);
+  $('authBtn').addEventListener('click', () => {
+    enter($('keyInput').value);
+  });
+  $('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('authBtn').click(); });
+
+  $('refreshBtn').addEventListener('click', load);
+  $('filter').addEventListener('input', e => { filterKw = e.target.value; render(); });
+
+  $('delBtn').addEventListener('click', async () => {
+    if (selected.size === 0) { toast('请先勾选要删除的留言', 'error'); return; }
+    if (!confirm(`确定删除 ${selected.size} 条留言？此操作不可撤销。`)) return;
+    const ids = Array.from(selected);
+    const r = await apiAdmin({ ids });
+    if (r.error) { toast(r.error, 'error'); return; }
+    toast(`已删除 ${r.deleted} 条`, 'ok');
+    await load();
+  });
+})();
+</script>
+</body>
+</html>
