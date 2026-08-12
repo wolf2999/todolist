@@ -52,17 +52,14 @@ flutter:
     - assets/images/
     - assets/icon/
     - assets/i18n/
+    - assets/fonts/Rubik/Rubik-Black.ttf
+    - assets/fonts/Rubik/Rubik-Bold.ttf
+    - assets/fonts/Rubik/Rubik-Medium.ttf
+    - assets/fonts/Rubik/Rubik-Light.ttf
+    - assets/fonts/Rubik/Rubik-Regular.ttf
 
-  fonts:
-    - family: Rubik
-      fonts:
-        - asset: assets/fonts/Rubik/Rubik-Black.ttf
-          weight: 900
-        - asset: assets/fonts/Rubik/Rubik-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Rubik/Rubik-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Rubik/Rubik-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Rubik/Rubik-Regular.ttf
-          weight: 400
+  # 注意：不再用 `fonts:` 静态声明 Rubik。
+  # 静态声明会让 HTML 渲染器在首帧绘制前阻塞等待字体下载，
+  # 手机慢网下表现为“splash 消失后白屏”(桌面网络快不易察觉)。
+  # 改为在 main() 里用 FontLoader 运行时异步加载（见 lib/main.dart），
+  # 首帧先以系统字体绘制、字体到位后自动重绘，彻底消除该白屏。

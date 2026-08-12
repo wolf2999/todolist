@@ -85,38 +85,33 @@
   <script src="flutter_bootstrap.js" async></script>
 
   <script>
-    // V1.4.4 修复：Flutter Web 渲染后会向 body 注入 <flt-glass-pane>。
-    // 之前依赖 Dart 端 _Bootstrap._removeHtmlSplash() 移除 #loading，
-    // 但实测在某些场景下（构建产物未覆盖、CDN 缓存旧版）该方法不执行，
-    // 导致 splash 永远盖在 Flutter 内容之上看上去 "卡死"。
-    // 这里用 MutationObserver 监听 body 子节点，检测到 Flutter 把
-    // 自身的 canvas/glass-pane 接管 DOM 时立即移除 splash，不再依赖 Dart 端。
+    // V1.4.6 修复：splash(#loading) 的移除改由 Dart 端 _Bootstrap 在首帧绘制后执行，
+    // 这样 splash 能完整盖住字体/资源加载等待期，避免手机慢网白屏。
+    // 本段仅保留“超时兜底”：若 20 秒内 Flutter 仍未接管 DOM（引擎加载失败/网络问题），
+    // 且 #loading 仍存在，则把 splash 换成可读错误提示而非无限糊着或纯白屏。
     (function () {
       const loading = document.getElementById('loading');
       if (!loading) return;
-      const remove = function () {
-        if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
-      };
-      // 判定 Flutter 已接管：body 或 documentElement 下出现 flt-glass-pane / flt-scene-host / canvas 等
       function flutterReady() {
         if (document.querySelector('flt-glass-pane, flt-scene-host, flutter-view')) return true;
         if (document.getElementsByTagName('canvas').length > 0) return true;
         return false;
       }
-      // 兜底：直接尝试轮询一次（早期阶段 DOM 可能还没批量同步）
-      const obs = new MutationObserver(function () {
-        if (flutterReady()) {
-          remove();
-          obs.disconnect();
-        }
-      });
-      obs.observe(document.documentElement, { childList: true, subtree: true });
-      // 双保险：兜底定时器，最多 15 秒后强制移除首屏占位。
-      // 如果 Flutter 没起来，也不会一直糊在脸上，用户能直接看到首屏内容或页面错误。
+      // 超时兜底：20 秒后若 #loading 仍在且 Flutter 未接管，给出可读提示。
       setTimeout(function () {
-        obs.disconnect();
-        remove();
-      }, 15000);
+        const el = document.getElementById('loading');
+        if (!el) return; // Dart 端已移除（首屏正常），无需处理。
+        if (!flutterReady()) {
+          el.classList.add('error');
+          const tip = el.querySelector('.tip');
+          if (tip) {
+            tip.innerHTML = '页面加载超时<br><small style="opacity:.7">'
+              + '请刷新重试；若手机浏览器仍白屏，多半是网络加载引擎慢，'
+              + '建议切换 Wi-Fi 或使用 Chrome/Safari 无痕窗口访问。</small><br>'
+              + '<button onclick="location.reload()">重新加载</button>';
+          }
+        }
+      }, 20000);
     })();
   </script>
 

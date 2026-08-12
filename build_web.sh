@@ -20,8 +20,8 @@ cd "$SCRIPT_DIR"
 
 # 如需部署到 GitHub Pages 子路径，把下面这行注释打开并删掉普通的 build 行:
 # flutter build web --release --base-href "/todolist/"
-# 注: Flutter 3.29+ 已移除 --web-renderer，渲染器由框架按平台自动选择
-#      (移动端 HTML / 桌面 CanvasKit)，首屏已是择优策略，无需额外参数。
+# 注: Flutter 3.29+ 已移除 --web-renderer，渲染器按平台自动选择，
+#      (移动端 HTML / 桌面 CanvasKit)，无需额外参数。
 flutter build web --release
 
 if [ "$1" = "--gh-pages" ]; then

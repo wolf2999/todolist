@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show FontLoader, rootBundle;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:easy_localization/easy_localization.dart';
@@ -15,10 +16,39 @@ import 'views/category_page.dart';
 import 'views/setting_page.dart';
 import 'views/widgets/bottom_nav.dart';
 
+/// V1.4.6 修复：手机浏览器白屏。
+/// 根因：之前 splash(#loading)的移除完全依赖 index.html 的 MutationObserver，
+/// 而它只在 Flutter 引擎注入 <flt-glass-pane> 时立即触发——此时首帧尚未绘制
+/// （HTML 渲染器下框架会等 Rubik 字体从网络下载完才绘制首帧）。手机网络慢时
+/// 字体加载耗时较长，splash 被提前移除后用户看到的是空 flt-glass-pane = 白屏；
+/// 桌面网络快、字体秒加载，所以看不出问题。
+/// 修复：(1) 用 FontLoader 异步加载 Rubik，首帧先以系统字体绘制、字体到位后自动
+/// 重绘，字体加载不再阻塞首帧；(2) 把 _Bootstrap 接入组件树，由 Dart 端在首帧
+/// postFrameCallback 后才移除 splash，彻底盖住加载等待期。
+Future<void> _loadFontsSafely() async {
+  if (!kIsWeb) return;
+  try {
+    final loader = FontLoader('Rubik')
+      ..addFont(rootBundle.load('assets/fonts/Rubik/Rubik-Regular.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/Rubik/Rubik-Medium.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/Rubik/Rubik-Bold.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/Rubik/Rubik-Black.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/Rubik/Rubik-Light.ttf'));
+    await loader.load().timeout(const Duration(seconds: 8));
+  } catch (e) {
+    // 字体加载失败也不阻塞首屏，使用系统字体回退即可。
+    debugPrint('[FontLoader] Rubik 加载失败，回退系统字体: $e');
+  }
+}
+
 void main() async {
   // EasyLocalization needs the binding initialized before loading assets.
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+  // V1.4.6：运行时异步加载 Rubik 字体（带超时）。必须在 runApp 前完成注册，
+  // 这样首帧绘制时框架认为 'Rubik' 已可用、不会阻塞等待网络字体下载，
+  // 手机慢网环境下避免 “splash 消失后白屏”。失败则回退系统字体。
+  await _loadFontsSafely();
   runApp(
     EasyLocalization(
       // 支持简体中文、繁体中文、英文。首次进入跟随系统语言，用户手动切换后记住选择。
@@ -68,34 +98,39 @@ class MyApp extends StatelessWidget {
       // Flutter 渲染进 error widget，画面卡在 splash 的 "T" logo 上不前进。
       // 现在用 MaterialApp.builder 拿到 MultiProvider 子树内的 context 来读，
       // 既能响应主题变化，又不会触发初始化顺序错误。
-      child: Builder(builder: (innerContext) {
-        final themeMode = innerContext.watch<ThemeController>().themeMode;
-        return MaterialApp(
-          title: 'appTitle'.tr(),
-          debugShowCheckedModeBanner: false,
-          // Locale is driven by EasyLocalization (follows system on first run,
-          // remembers the user's choice afterwards).
-          locale: innerContext.locale,
-          supportedLocales: innerContext.supportedLocales,
-          // V1.4 修复：必须使用 innerContext.localizationDelegates —— 它内部已经
-          // 包含了 easy_localization 的 _EasyLocalizationDelegate，MaterialApp
-          // 才会触发它的 load() 来加载翻译 JSON（RootBundleAssetLoader）。
-          // 之前只放了 Global* delegates，导致 _EasyLocalizationDelegate.load
-          // 永远没被调用，translations 一直为 null，所有 .tr() 回退到 key。
-          localizationsDelegates: innerContext.localizationDelegates,
-          theme: buildTheme(),
-          darkTheme: ThemeData.dark().copyWith(
-            primaryColor: Colors.deepPurple,
-            scaffoldBackgroundColor: const Color(0xFF15171E),
-          ),
-          themeMode: themeMode,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const Onboarding(),
-            '/main': (context) => const AppShell(),
-          },
-        );
-      }),
+      // V1.4.6 修复：再包一层 _Bootstrap，由 Dart 端在首帧 postFrameCallback 之后
+      // 才移除 index.html 的 #loading splash，盖住字体/资源加载等待期，
+      // 彻底消除手机端 “splash 消失即白屏”（此前 splash 移除时机过早）。
+      child: _Bootstrap(
+        child: Builder(builder: (innerContext) {
+          final themeMode = innerContext.watch<ThemeController>().themeMode;
+          return MaterialApp(
+            title: 'appTitle'.tr(),
+            debugShowCheckedModeBanner: false,
+            // Locale is driven by EasyLocalization (follows system on first run,
+            // remembers the user's choice afterwards).
+            locale: innerContext.locale,
+            supportedLocales: innerContext.supportedLocales,
+            // V1.4 修复：必须使用 innerContext.localizationDelegates —— 它内部已经
+            // 包含了 easy_localization 的 _EasyLocalizationDelegate，MaterialApp
+            // 才会触发它的 load() 来加载翻译 JSON（RootBundleAssetLoader）。
+            // 之前只放了 Global* delegates，导致 _EasyLocalizationDelegate.load
+            // 永远没被调用，translations 一直为 null，所有 .tr() 回退到 key。
+            localizationsDelegates: innerContext.localizationDelegates,
+            theme: buildTheme(),
+            darkTheme: ThemeData.dark().copyWith(
+              primaryColor: Colors.deepPurple,
+              scaffoldBackgroundColor: const Color(0xFF15171E),
+            ),
+            themeMode: themeMode,
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const Onboarding(),
+              '/main': (context) => const AppShell(),
+            },
+          );
+        }),
+      ),
     );
   }
 }
@@ -124,6 +159,8 @@ class _BootstrapState extends State<_Bootstrap> {
   }
 
   /// 首帧渲染后移除 index.html 中的 #loading 占位（仅 Web 有效）。
+  /// 直接移除元素即可；index.html 的超时兜底会检查该元素是否仍存在，
+  /// 不存在则不会误报“加载超时”。
   void _removeHtmlSplash() {
     if (!kIsWeb) return;
     // ignore: avoid_web_libraries_in_flutter
