@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FontLoader, rootBundle;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+
+import 'services/splash.dart';
 
 import 'controllers/category_controller.dart';
 import 'controllers/task_controller.dart';
@@ -158,14 +158,9 @@ class _BootstrapState extends State<_Bootstrap> {
     });
   }
 
-  /// 首帧渲染后移除 index.html 中的 #loading 占位（仅 Web 有效）。
-  /// 直接移除元素即可；index.html 的超时兜底会检查该元素是否仍存在，
-  /// 不存在则不会误报“加载超时”。
+  /// 首帧渲染后移除 index.html 中的 #loading 占位（仅 Web 有效，原生平台为空操作）。
   void _removeHtmlSplash() {
-    if (!kIsWeb) return;
-    // ignore: avoid_web_libraries_in_flutter
-    final el = html.document.getElementById('loading');
-    el?.remove();
+    removeHtmlSplash();
   }
 
   @override

@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../controllers/category_controller.dart';
 import '../controllers/task_controller.dart';
+import '../services/web_actions.dart';
 import '../utils/colors.dart';
 
 /// Settings screen (UI4 1:1 还原).
@@ -43,12 +42,7 @@ class SettingPage extends StatelessWidget {
         if (kIsWeb) {
           final bytes = taskController.exportBytes(categoryController.categories);
           final fileName = taskController.exportFileName();
-          final blob = html.Blob(<Object>[bytes]);
-          final url = html.Url.createObjectUrlFromBlob(blob);
-          final anchor = html.AnchorElement(href: url)
-            ..download = fileName;
-          anchor.click();
-          html.Url.revokeObjectUrl(url);
+          await webDownloadBytes(bytes, fileName);
           if (!context.mounted) return;
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text('exported'.tr())));
@@ -184,8 +178,7 @@ class SettingPage extends StatelessWidget {
                   // 在 Web 上调用 window.open；非 Web 直接占位提示，避免误触。
                   onTap: () {
                     if (kIsWeb) {
-                      // ignore: avoid_web_libraries_in_flutter
-                      html.window.open('/message_board.html', '_blank');
+                      webOpenInNewTab('/message_board.html');
                     }
                   },
                 ),
@@ -197,8 +190,7 @@ class SettingPage extends StatelessWidget {
                   // 打开后手动粘贴密钥即可。便捷 URL（带 ?key=）可自行收藏本机使用。
                   onTap: () {
                     if (kIsWeb) {
-                      // ignore: avoid_web_libraries_in_flutter
-                      html.window.open('/message_board_admin.html', '_blank');
+                      webOpenInNewTab('/message_board_admin.html');
                     }
                   },
                 ),

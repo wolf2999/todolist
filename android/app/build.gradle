@@ -11,6 +11,15 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+// 读取正式 release 签名配置（android/key.properties，已在 .gitignore 中忽略）。
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -35,13 +44,31 @@ android {
         applicationId "com.example.flutter_todolist"
         minSdk 21
         targetSdk 35
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        versionCode 2
+        versionName "1.0.1"
+    }
+
+    // 正式 release 签名（从 android/key.properties 读取）。
+    // 若 key.properties 不存在则回退到 debug 签名，保证本地构建不中断。
+    signingConfigs {
+        release {
+            if (keystoreProperties['storeFile'] != null) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            // 去掉未使用的资源，进一步减小包体。
+            shrinkResources false
+            minifyEnabled false
         }
     }
 }

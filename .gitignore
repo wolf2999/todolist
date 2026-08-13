@@ -56,3 +56,5 @@ linux/flutter/ephemeral/
 key.jks
 *.p12
 *.keystore
+upload-keystore.jks
+android/key.properties
