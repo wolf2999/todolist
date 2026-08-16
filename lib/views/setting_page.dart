@@ -93,6 +93,36 @@ class SettingPage extends StatelessWidget {
           .showSnackBar(SnackBar(content: Text('imported'.tr(namedArgs: {'count': count.toString()}))));
     }
 
+    Future<void> onShareApp() async {
+      const shareUrl = 'https://atodolist.pages.dev/';
+      const shareText = 'To-Do List — A clean, cross-platform todo app';
+      try {
+        if (kIsWeb) {
+          final result = await webShareOrCopy(shareUrl);
+          if (!context.mounted) return;
+          final msg = switch (result) {
+            'shared' => 'shared'.tr(),
+            'copied' => 'linkCopied'.tr(),
+            _ => 'shareFailed'.tr(),
+          };
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(msg)));
+          return;
+        }
+        final result = await Share.share(shareText,
+            subject: 'To-Do List');
+        if (!context.mounted) return;
+        if (result.status == ShareResultStatus.success) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('shared'.tr())));
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('shareFailed'.tr())));
+      }
+    }
+
     return Scaffold(
       backgroundColor: ToDoColors.background,
       body: SafeArea(
@@ -193,6 +223,13 @@ class SettingPage extends StatelessWidget {
                       webOpenInNewTab('/message_board_admin.html');
                     }
                   },
+                ),
+                const Divider(height: 1, color: ToDoColors.divider),
+                _Row(
+                  icon: Icons.share_outlined,
+                  title: 'shareApp'.tr(),
+                  // Web 端调用 navigator.share / 复制链接；非 Web 端用系统分享面板。
+                  onTap: onShareApp,
                 ),
               ],
             ),

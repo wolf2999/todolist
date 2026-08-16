@@ -2,3 +2,4 @@
 Future<void> webDownloadFile(String url) async {}
 Future<void> webOpenInNewTab(String url) async {}
 Future<void> webDownloadBytes(List<int> bytes, String filename) async {}
+Future<String> webShareOrCopy(String url) async => 'failed';

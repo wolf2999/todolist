@@ -75,5 +75,9 @@
   "dataManagement": "数据管理",
   "downloadApk": "下载 Android 版",
   "downloadWindows": "下载 Windows 版",
-  "comingSoon": "即将推出"
+  "comingSoon": "即将推出",
+  "shareApp": "分享应用",
+  "shareAppHint": "复制链接或分享给好友，让更多人用上这款待办清单。",
+  "linkCopied": "链接已复制到剪贴板",
+  "shareFailed": "分享失败，请重试"
 }

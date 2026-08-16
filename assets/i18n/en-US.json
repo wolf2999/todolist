@@ -76,5 +76,9 @@
   "dataManagement": "Data Management",
   "downloadApk": "Download Android",
   "downloadWindows": "Download Windows",
-  "comingSoon": "Coming soon"
+  "comingSoon": "Coming soon",
+  "shareApp": "Share App",
+  "shareAppHint": "Copy the link or share it with your friends to spread the word.",
+  "linkCopied": "Link copied to clipboard",
+  "shareFailed": "Share failed, please try again"
 }

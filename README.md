@@ -1,8 +1,21 @@
 # 待办清单 To Do List
 
+<p align="center">
+  <img src="doc/A_clean_modern_productivity_ap_2026-08-16T12-26-46.png" width="320" alt="To-Do List preview">
+</p>
+
+<p align="center">
+  <a href="https://atodolist.pages.dev/"><img src="https://img.shields.io/badge/Live%20Demo-Open%20App-4A6CF7?style=flat-square&logo=googlechrome&logoColor=white" alt="Live Demo"></a>
+  <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Android%20%7C%20iOS%20%7C%20Desktop-4A6CF7?style=flat-square" alt="Platforms">
+  <img src="https://img.shields.io/badge/Built%20with-Flutter-4A6CF7?style=flat-square&logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+</p>
+
 一个使用 Flutter 构建的待办事项（Todo List）应用，基于 *Rudi Hartono* 的设计稿改造而来，原稿可在 [Uplabs](https://www.uplabs.com/posts/to-do-list-app-freebie-kit) 查看。
 
 本项目在原静态 UI 基础上，使用 **最新版 Flutter** 重写为 **全平台** 支持，并采用 **MVC（Model-View-Controller）** 架构，新增本地持久化、任务新增、完成勾选、滑动删除等真实可用的功能。
+
+> 🌐 **Live Demo（在线体验）**：<https://atodolist.pages.dev/> — 无需安装，浏览器直接打开即可使用，并支持「添加到主屏幕」当作原生 App。
 
 ## 平台支持
 
@@ -66,6 +79,29 @@ flutter run -d ios
 - ✅ 顶部进度条统计完成情况
 - ✅ 数据本地持久化（关闭应用后任务仍保留）
 - ✅ 全平台一致体验（Web / 桌面 / 移动端）
+
+## 在线体验 · Live Demo
+
+直接打开 👉 **<https://atodolist.pages.dev/>** 即可在浏览器中使用完整功能，数据保存在本地。
+
+<p align="center">
+  <a href="https://atodolist.pages.dev/">
+    <img src="doc/A_clean_modern_productivity_ap_2026-08-16T12-26-46.png" width="420" alt="To-Do List app preview">
+  </a>
+</p>
+
+- 支持「添加到主屏幕」以 PWA 方式安装为桌面/手机 App
+- 内置留言板（Cloudflare Pages + D1，零服务器运维）
+- 设置页一键「分享应用」，复制链接或唤起系统分享
+
+## 下载
+
+| 平台 | 下载 |
+| ---- | ---- |
+| Android (arm64) | <https://atodolist.pages.dev/downloads/app-release.apk> |
+| Web (PWA) | <https://atodolist.pages.dev/> |
+
+> 分享给朋友：在设置页点击 **分享应用** 即可复制链接或唤起系统分享面板。
 
 ## 版本历史
 

@@ -28,3 +28,25 @@ Future<void> webDownloadBytes(List<int> bytes, String filename) async {
   anchor.remove();
   html.Url.revokeObjectUrl(url);
 }
+
+// Web 端分享：优先调用原生 navigator.share，不支持则回退到复制链接到剪贴板。
+// 返回 'shared'（已调用系统分享面板）或 'copied'（已复制到剪贴板）或 'failed'。
+Future<String> webShareOrCopy(String url) async {
+  // 通过 dynamic 绕过 dart:html 的类型限制，运行时再探测 navigator.share 是否存在。
+  final navigator = html.window.navigator as dynamic;
+  if (navigator.share != null) {
+    try {
+      await navigator.share(
+          'To-Do List', 'A clean, cross-platform todo app', url);
+      return 'shared';
+    } catch (_) {
+      // 用户取消或不支持 -> 继续复制逻辑
+    }
+  }
+  final clipboard = html.window.navigator.clipboard;
+  if (clipboard != null) {
+    await clipboard.writeText(url);
+    return 'copied';
+  }
+  return 'failed';
+}
