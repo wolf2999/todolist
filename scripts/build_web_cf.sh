@@ -33,6 +33,19 @@ flutter pub get
 # 4) 构建 Web release 产物 (Flutter 3.29+ 渲染器按平台自动选择, 无需额外参数)
 flutter build web --release
 
+# 4.5) 自动打包 Android APK 并放入下载目录 (随每次部署更新)。
+#     使用 --split-per-abi 仅出 arm64-v8a 包 (~12MB),避免超过 Cloudflare Pages 单文件 25MiB 上限。
+#     产物写入 web/downloads/,随后 flutter build web 已结束,不会被清空;下载页 /downloads/app-release.apk 直接引用。
+mkdir -p web/downloads
+flutter build apk --release --split-per-abi
+APK_SRC="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
+if [ -f "$APK_SRC" ]; then
+  cp "$APK_SRC" web/downloads/app-release.apk
+  echo ">>> 已生成 APK -> web/downloads/app-release.apk ($(du -h web/downloads/app-release.apk | cut -f1))"
+else
+  echo "!!! 未找到 arm64 APK:$APK_SRC,下载页将沿用仓库内已有文件(若有)。"
+fi
+
 # 5) 拷贝独立于 Flutter 的静态页面 (留言板) 到产物根。
 #    flutter build web 会清空 build/web/ 重建，所以必须在 build 之后拷贝，
 #    否则 message_board.html 会被删掉、/message_board.html 访问 404。

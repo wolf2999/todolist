@@ -58,3 +58,6 @@ key.jks
 *.keystore
 upload-keystore.jks
 android/key.properties
+
+# 由 CI (Cloudflare Pages build_web_cf.sh) 自动生成的下载 APK，不入库（避免大文件 + 保证每次部署最新）
+web/downloads/app-release.apk
