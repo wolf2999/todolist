@@ -204,11 +204,13 @@ class SettingPage extends StatelessWidget {
                 _Row(
                   icon: Icons.forum_outlined,
                   title: 'messageBoard'.tr(),
-                  // 留言板以独立 HTML 页面部署，新窗口打开 (CF Pages 静态托管)。
-                  // 在 Web 上调用 window.open；非 Web 直接占位提示，避免误触。
+                  // 留言板以独立 HTML 页面部署 (CF Pages 静态托管)。
+                  // Web 调 window.open；原生 App 用 url_launcher 跳系统浏览器打开。
                   onTap: () {
                     if (kIsWeb) {
                       webOpenInNewTab('/message_board.html');
+                    } else {
+                      launchExternalUrl('https://atodolist.pages.dev/message_board.html');
                     }
                   },
                 ),
@@ -221,6 +223,8 @@ class SettingPage extends StatelessWidget {
                   onTap: () {
                     if (kIsWeb) {
                       webOpenInNewTab('/message_board_admin.html');
+                    } else {
+                      launchExternalUrl('https://atodolist.pages.dev/message_board_admin.html');
                     }
                   },
                 ),

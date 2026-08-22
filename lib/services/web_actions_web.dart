@@ -29,6 +29,11 @@ Future<void> webDownloadBytes(List<int> bytes, String filename) async {
   html.Url.revokeObjectUrl(url);
 }
 
+// 打开外部 URL：Web 端用 window.open（新标签页）；原生平台由 stub 用 url_launcher 实现。
+Future<void> launchExternalUrl(String url) async {
+  html.window.open(url, '_blank');
+}
+
 // Web 端分享：优先调用原生 navigator.share，不支持则回退到复制链接到剪贴板。
 // 返回 'shared'（已调用系统分享面板）或 'copied'（已复制到剪贴板）或 'failed'。
 Future<String> webShareOrCopy(String url) async {
