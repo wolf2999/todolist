@@ -94,7 +94,7 @@ jobs:
 
             ### 下载（GitHub Release 附件）
             - **Android** (arm64-v8a): `todolist-android.apk`
-            - **Windows** (安装包): `todolist-windows.exe`（见 windows-release 工作流）
+            - **Windows** (免安装 zip): `todolist-windows.zip`（见 windows-release 工作流）
 
             ### 说明
             - Android 仅需 arm64 架构安装包，主流手机均支持。
