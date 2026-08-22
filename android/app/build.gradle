@@ -49,7 +49,8 @@ android {
     }
 
     // 正式 release 签名（从 android/key.properties 读取）。
-    // 若 key.properties 不存在则回退到 debug 签名，保证本地构建不中断。
+    // 若 key.properties 不存在则 release 块留空，buildTypes.release 改用 debug 签名兜底，
+    // 保证本地/CI 构建都能跑通。
     signingConfigs {
         release {
             if (keystoreProperties['storeFile'] != null) {
@@ -57,15 +58,16 @@ android {
                 keyPassword keystoreProperties['keyPassword']
                 storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
-            } else {
-                signingConfig signingConfigs.debug
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // 有正式 keystore 时用 release 签名；没有则用 debug 签名兜底（CI 默认走此分支）。
+            signingConfig keystoreProperties['storeFile'] != null
+                ? signingConfigs.release
+                : signingConfigs.debug
             // 去掉未使用的资源，进一步减小包体。
             shrinkResources false
             minifyEnabled false
