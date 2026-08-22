@@ -78,9 +78,9 @@ jobs:
       - name: Build Windows (release)
         run: flutter build windows --release
 
-      - name: Install Inno Setup
-        # 用于把 Release 文件夹打包成单个 .exe 安装器
-        uses: jrsoftware/isetup-action@v1
+      - name: Install Inno Setup (via Chocolatey)
+        # windows-latest runner 自带 choco,装好后 iscc.exe 在 PATH 中可用
+        run: choco install innosetup -y --no-progress
 
       - name: Package installer with Inno Setup
         shell: pwsh
@@ -90,7 +90,9 @@ jobs:
           } else {
             $version = '${{ github.event.inputs.version }}'
           }
-          iscc.exe "packaging/windows/todolist.iss" /DAppVersion="$version"
+          # 64-bit 安装路径
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $iscc "packaging/windows/todolist.iss" /DAppVersion="$version"
 
       - name: Rename installer (固定名, 供 latest/download 稳定链接)
         shell: pwsh
