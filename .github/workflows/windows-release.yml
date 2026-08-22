@@ -6,9 +6,12 @@ name: Windows Zip Release
 # 说明：本 workflow 只负责 Windows 版本。Android APK 由 android-release.yml 负责，
 #       两者对同一个 tag 各自 upsert 同一个 GitHub Release，后跑的会追加附件，最终合并。
 #
-# 当前方案：在 Ubuntu 上交叉编译 Windows 可执行文件（clang + mingw-w64），打包成
-#          todolist-windows.zip 直接分发（免安装、解压即用）。
-#          后续若需要正式安装器（.exe），再加一条 windows-installer.yml（windows-latest + Inno Setup）。
+# 当前方案：在 windows-latest 上用 Flutter 正常构建 Windows Release，再用 PowerShell 的
+#          Compress-Archive 直接打包成 todolist-windows.zip（免安装、解压即用）。
+#          注意：Flutter 不支持在非 Windows 主机上交叉编译 Windows 目标，故必须用 windows runner。
+#          本方案不依赖 Visual Studio / Inno Setup（仅压缩，无需链接安装器），不会触发 “no instance of Visual Studio” 报错。
+#
+#          后续若需要正式安装器（.exe），再加一条 windows-installer.yml（需解决 VS 工具链问题）。
 on:
   push:
     tags:
@@ -25,8 +28,8 @@ permissions:
 
 jobs:
   build:
-    name: Cross-compile Windows (zip)
-    runs-on: ubuntu-latest
+    name: Build Windows Zip
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,34 +41,23 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install cross-compile toolchain (clang + mingw-w64)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build \
-            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
-            mingw-w64 wine64
-
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Windows (release, cross-compile)
+      - name: Build Windows (release)
         run: flutter build windows --release
 
       - name: Package as zip (固定名, 供 latest/download 稳定链接)
-        shell: bash
+        shell: pwsh
         run: |
-          if [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
-            VERSION="${{ github.ref_name }}"
-          else
-            VERSION="ci-${{ github.run_number }}"
-          fi
-          SRC="build/windows/x64/runner/Release"
-          # 仅打包核心产物，剔除体积大且无用的符号/调试文件
-          mkdir -p pkg
-          cp -r "$SRC"/* pkg/ 2>/dev/null || true
-          rm -f pkg/*.pdb pkg/*.exp pkg/*.lib 2>/dev/null || true
-          ( cd pkg && zip -r "../todolist-windows.zip" . )
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          $src = "build/windows/x64/runner/Release"
+          # 剔除体积大且无用的符号/调试文件
+          $bin = "pkg"
+          if (Test-Path $bin) { Remove-Item $bin -Recurse -Force }
+          New-Item -ItemType Directory -Path $bin | Out-Null
+          Copy-Item "$src\*" -Destination $bin -Recurse
+          Get-ChildItem $bin -Include *.pdb,*.exp,*.lib -Recurse | Remove-Item -Force
+          Compress-Archive -Path "$bin\*" -DestinationPath "todolist-windows.zip" -Force
 
       - name: Upload zip
         uses: actions/upload-artifact@v4
