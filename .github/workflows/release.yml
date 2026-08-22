@@ -1,10 +1,18 @@
 name: Release APK & Windows
 
-# 触发：推送形如 v1.0.2 的 tag 时，自动构建 Android APK 与 Windows 安装包并发 GitHub Release。
+# 触发方式：
+#   1) 推送形如 v1.0.2 的 tag 时，自动构建并发布正式 Release。
+#   2) 在 Actions 页面点 “Run workflow” 手动冒烟测试（可选填版本号）。
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (仅手动触发时使用，如 1.0.1；tag 触发时忽略)'
+        required: false
+        default: '1.0.1'
 
 # 授予创建 Release 的权限
 permissions:
@@ -77,7 +85,11 @@ jobs:
       - name: Package installer with Inno Setup
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          if ('${{ startsWith(github.ref, 'refs/tags/') }}' -eq 'true') {
+            $version = '${{ github.ref_name }}'.TrimStart('v')
+          } else {
+            $version = '${{ github.event.inputs.version }}'
+          }
           iscc.exe "packaging/windows/todolist.iss" /DAppVersion="$version"
 
       - name: Rename installer (固定名, 供 latest/download 稳定链接)
@@ -99,6 +111,20 @@ jobs:
     needs: [android, windows]
     runs-on: ubuntu-latest
     steps:
+      - name: Compute tag & version
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          else
+            TAG="ci-${{ github.run_number }}"
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -110,18 +136,21 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: To-Do List ${{ github.ref_name }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: To-Do List ${{ steps.meta.outputs.tag }}
+          # 手动冒烟测试不打正式 Release（不标记为 Latest），避免污染 latest/download
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           body: |
-            ## To-Do List ${{ github.ref_name }}
+            ## To-Do List ${{ steps.meta.outputs.tag }} (v${{ steps.meta.outputs.version }})
 
-            ### 下载（固定链接，永远指向最新版）
-            - **Android** (arm64-v8a): [todoist-android.apk](https://github.com/wolf2999/todolist/releases/latest/download/todolist-android.apk)
-            - **Windows** (安装包): [todoist-windows.exe](https://github.com/wolf2999/todolist/releases/latest/download/todolist-windows.exe)
+            ### 下载（GitHub Release 附件）
+            - **Android** (arm64-v8a): `todolist-android.apk`
+            - **Windows** (安装包): `todolist-windows.exe`
 
             ### 说明
             - Android 仅需 arm64 架构安装包，主流手机均支持。
             - Windows 为自解压安装器，首次运行若被 SmartScreen 拦截，请点击“仍要运行”（无 EV 代码签名证书时的正常现象）。
+            - 仅 tag 触发的正式版本才会更新 `latest/download` 链接；手动冒烟测试标记为 pre-release。
           files: |
             artifacts/android-apk/todoist-android.apk
             artifacts/windows-installer/todoist-windows.exe
