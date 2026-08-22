@@ -1,8 +1,10 @@
-name: Release APK & Windows
+name: Windows Installer Release
 
 # 触发方式：
 #   1) 推送形如 v1.0.2 的 tag 时，自动构建并发布正式 Release。
 #   2) 在 Actions 页面点 “Run workflow” 手动冒烟测试（可选填版本号）。
+# 说明：本 workflow 只负责 Windows 安装包。Android APK 由 android-release.yml 负责，
+#       两者对同一个 tag 各自 upsert 同一个 GitHub Release，后跑的会追加附件，最终合并。
 on:
   push:
     tags:
@@ -14,51 +16,11 @@ on:
         required: false
         default: '1.0.1'
 
-# 授予创建 Release 的权限
 permissions:
   contents: write
 
 jobs:
-  # ===================== Android (arm64) =====================
-  android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java (Android SDK 需要)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.3'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK (arm64-v8a only)
-        # 仅出 arm64 包，体积约 12MB，避免大体积；如需全架构可去掉 --split-per-abi
-        run: flutter build apk --release --split-per-abi
-
-      - name: Rename artifact (固定名, 供 latest/download 稳定链接)
-        run: cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk todoist-android.apk
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: todoist-android.apk
-          if-no-files-found: error
-
-  # ===================== Windows 安装包 =====================
-  windows:
+  build:
     name: Build Windows Installer
     runs-on: windows-latest
     steps:
@@ -79,7 +41,7 @@ jobs:
         run: flutter build windows --release
 
       - name: Install Inno Setup (via Chocolatey)
-        # windows-latest runner 自带 choco,装好后 iscc.exe 在 PATH 中可用
+        # windows-latest runner 自带 choco,装好后 iscc.exe 在默认路径可用
         run: choco install innosetup -y --no-progress
 
       - name: Package installer with Inno Setup
@@ -90,7 +52,6 @@ jobs:
           } else {
             $version = '${{ github.event.inputs.version }}'
           }
-          # 64-bit 安装路径
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           & $iscc "packaging/windows/todolist.iss" /DAppVersion="$version"
 
@@ -107,10 +68,9 @@ jobs:
           path: todoist-windows.exe
           if-no-files-found: error
 
-  # ===================== 发布 Release =====================
   release:
-    name: Create GitHub Release
-    needs: [android, windows]
+    name: Publish Release (Windows)
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Compute tag & version
@@ -127,32 +87,28 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Download all artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
+          name: windows-installer
           path: artifacts
 
-      - name: List artifacts
-        run: ls -R artifacts
-
-      - name: Create Release
+      - name: Create / Update Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: To-Do List ${{ steps.meta.outputs.tag }}
-          # 手动冒烟测试不打正式 Release（不标记为 Latest），避免污染 latest/download
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          append_body: false
           body: |
             ## To-Do List ${{ steps.meta.outputs.tag }} (v${{ steps.meta.outputs.version }})
 
             ### 下载（GitHub Release 附件）
-            - **Android** (arm64-v8a): `todolist-android.apk`
+            - **Android** (arm64-v8a): `todolist-android.apk`（见 android-release 工作流）
             - **Windows** (安装包): `todolist-windows.exe`
 
             ### 说明
-            - Android 仅需 arm64 架构安装包，主流手机均支持。
             - Windows 为自解压安装器，首次运行若被 SmartScreen 拦截，请点击“仍要运行”（无 EV 代码签名证书时的正常现象）。
             - 仅 tag 触发的正式版本才会更新 `latest/download` 链接；手动冒烟测试标记为 pre-release。
           files: |
-            artifacts/android-apk/todoist-android.apk
-            artifacts/windows-installer/todoist-windows.exe
+            artifacts/todoist-windows.exe
