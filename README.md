@@ -1,7 +1,7 @@
 # 待办清单 To Do List
 
 <p align="center">
-  <img src="doc/A_clean_modern_productivity_ap_2026-08-16T12-26-46.png" width="320" alt="To-Do List preview">
+  <img src="https://atodolist.pages.dev/icons/Icon-512.png" width="320" alt="To-Do List preview">
 </p>
 
 <p align="center">
@@ -86,7 +86,7 @@ flutter run -d ios
 
 <p align="center">
   <a href="https://atodolist.pages.dev/">
-    <img src="doc/A_clean_modern_productivity_ap_2026-08-16T12-26-46.png" width="420" alt="To-Do List app preview">
+    <img src="https://atodolist.pages.dev/icons/Icon-512.png" width="420" alt="To-Do List app preview">
   </a>
 </p>
 
