@@ -1,0 +1,127 @@
+name: Release APK & Windows
+
+# 触发：推送形如 v1.0.2 的 tag 时，自动构建 Android APK 与 Windows 安装包并发 GitHub Release。
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 授予创建 Release 的权限
+permissions:
+  contents: write
+
+jobs:
+  # ===================== Android (arm64) =====================
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java (Android SDK 需要)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK (arm64-v8a only)
+        # 仅出 arm64 包，体积约 12MB，避免大体积；如需全架构可去掉 --split-per-abi
+        run: flutter build apk --release --split-per-abi
+
+      - name: Rename artifact (固定名, 供 latest/download 稳定链接)
+        run: cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk todoist-android.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: todoist-android.apk
+          if-no-files-found: error
+
+  # ===================== Windows 安装包 =====================
+  windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows (release)
+        run: flutter build windows --release
+
+      - name: Install Inno Setup
+        # 用于把 Release 文件夹打包成单个 .exe 安装器
+        uses: jrsoftware/isetup-action@v1
+
+      - name: Package installer with Inno Setup
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          iscc.exe "packaging/windows/todolist.iss" /DAppVersion="$version"
+
+      - name: Rename installer (固定名, 供 latest/download 稳定链接)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "packaging/windows/Output/todolist-setup-*.exe" | Select-Object -First 1
+          Copy-Item $exe.FullName "todolist-windows.exe"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: todoist-windows.exe
+          if-no-files-found: error
+
+  # ===================== 发布 Release =====================
+  release:
+    name: Create GitHub Release
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: To-Do List ${{ github.ref_name }}
+          body: |
+            ## To-Do List ${{ github.ref_name }}
+
+            ### 下载（固定链接，永远指向最新版）
+            - **Android** (arm64-v8a): [todoist-android.apk](https://github.com/wolf2999/todolist/releases/latest/download/todolist-android.apk)
+            - **Windows** (安装包): [todoist-windows.exe](https://github.com/wolf2999/todolist/releases/latest/download/todolist-windows.exe)
+
+            ### 说明
+            - Android 仅需 arm64 架构安装包，主流手机均支持。
+            - Windows 为自解压安装器，首次运行若被 SmartScreen 拦截，请点击“仍要运行”（无 EV 代码签名证书时的正常现象）。
+          files: |
+            artifacts/android-apk/todoist-android.apk
+            artifacts/windows-installer/todoist-windows.exe

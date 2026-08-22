@@ -58,18 +58,18 @@ enum AppThemeMode { light, dark, system }
 
 /// 主页右上角「下载」入口配置 (Web / 桌面端可见，移动端隐藏).
 ///
-/// 链接为相对路径，部署后自动指向站点根 (如 https://atodolist.pages.dev/...)。
-/// 把安装包放进 `web/downloads/` 目录，随 `flutter build web` 一起发布即可。
+/// 安装包由 GitHub Actions 在打 tag 时构建，并以固定文件名发布到 GitHub Release，
+/// 通过 `releases/latest/download/<固定名>` 始终指向最新版本，下载页无需改代码。
 ///
 /// 说明：
-/// - [apkUrl]：Android 安装包 (release) 已生成，放 web/downloads/app-release.apk。
-/// - [windowsExeUrl]：Windows 安装包。因 `flutter build windows` 产物是
-///   一个目录 (exe + 依赖 DLL + data/)，这里直接分发 zip 包，避免引入
-///   Inno Setup 等额外打包依赖。运行 `scripts/build_windows.sh` 会自动
-///   生成 web/downloads/todolist-windows.zip。
+/// - [apkUrl]：Android 安装包 (arm64)，固定名 todoist-android.apk。
+/// - [windowsExeUrl]：Windows 安装包 (Inno Setup 打包的单个 exe 安装器)，固定名 todoist-windows.exe。
 class DownloadLinks {
-  static const String apkUrl = 'downloads/app-release.apk';
-  static const String windowsExeUrl = 'downloads/todolist-windows.zip';
+  static const String githubRepo = 'wolf2999/todolist';
+  static const String apkUrl =
+      'https://github.com/$githubRepo/releases/latest/download/todolist-android.apk';
+  static const String windowsExeUrl =
+      'https://github.com/$githubRepo/releases/latest/download/todolist-windows.exe';
   static bool get windowsReady => windowsExeUrl.isNotEmpty;
 }
 

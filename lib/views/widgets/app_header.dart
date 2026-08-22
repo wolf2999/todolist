@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/constants.dart';
 import '../../services/web_actions.dart';
@@ -196,16 +195,9 @@ class _DownloadItem extends StatelessWidget {
       enabled: enabled,
       onTap: enabled
           ? () async {
-              if (kIsWeb) {
-                // Web：用原生 <a download> 强制触发下载，避免 url_launcher
-                // 的 _self 跳转导致浏览器直接渲染二进制（看起来"没反应"）。
-                await webDownloadFile(url);
-              } else {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                }
-              }
+              // 安装包托管在 GitHub Release（外链），Web 与原生统一用
+              // launchExternalUrl：Web 走 window.open 新标签，原生走系统浏览器。
+              await launchExternalUrl(url);
               if (context.mounted) Navigator.pop(context);
             }
           : () {
