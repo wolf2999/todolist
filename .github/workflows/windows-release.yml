@@ -6,11 +6,11 @@ name: Windows Zip Release
 # 说明：本 workflow 只负责 Windows 版本。Android APK 由 android-release.yml 负责，
 #       两者对同一个 tag 各自 upsert 同一个 GitHub Release，后跑的会追加附件，最终合并。
 #
-# 当前方案：在 windows-latest 上用 Flutter 正常构建 Windows Release，再用 PowerShell 的
+# 当前方案：在 windows-2022 上用 Flutter 正常构建 Windows Release，再用 PowerShell 的
 #          Compress-Archive 直接打包成 todolist-windows.zip（免安装、解压即用）。
 #          注意：Flutter 不支持在非 Windows 主机上交叉编译 Windows 目标，故必须用 windows runner。
-#          windows-latest runner 不预装 Visual Studio，需先用 microsoft/setup-msbuild@v2
-#          装 VS 2022 Build Tools（Flutter 3.29 用的 CMake Generator 才会找到编译器）。
+#          runner 钉死 windows-2022（VS 2022 + NativeDesktop 工作负载），因为 windows-latest 已切到 VS 2026 (18.x)，
+#          而 Flutter 3.32.8 的 cmake_generator 只识别 VS 16/17，遇到 VS 18 会 fallback 报错。
 #          本方案不再依赖 Inno Setup（仅压缩），所以不需要 .iss 脚本，也避免“no instance of VS”报错。
 #
 #          后续若需要正式安装器（.exe），再加一条 windows-installer.yml（同样依赖 VS 工具链，再加 Inno Setup）。
@@ -31,7 +31,10 @@ permissions:
 jobs:
   build:
     name: Build Windows Zip
-    runs-on: windows-latest
+    # 钉死 windows-2022：windows-latest 已在 2026-06 切换到 VS 2026 (18.x)，
+    # 而 Flutter 3.32.8 的 cmake_generator 只识别 VS 16/17，遇到 VS 18 会硬编码 fallback 到
+    # 'Visual Studio 16 2019' 找不到。windows-2022 runner 默认装的是 VS 2022 (17.x) + NativeDesktop + MSBuild，刚好匹配。
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,11 +48,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Install Visual Studio 2022 Build Tools
-        # Flutter 在 windows 上构建需要 MSVC 编译器（CMake Generator: Visual Studio）。
-        # windows-latest runner 不预装 VS，须显式装 Build Tools。
-        uses: microsoft/setup-msbuild@v2
 
       - name: Build Windows (release)
         run: flutter build windows --release
