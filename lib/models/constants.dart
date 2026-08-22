@@ -63,13 +63,14 @@ enum AppThemeMode { light, dark, system }
 ///
 /// 说明：
 /// - [apkUrl]：Android 安装包 (arm64)，固定名 todoist-android.apk。
-/// - [windowsExeUrl]：Windows 安装包 (Inno Setup 打包的单个 exe 安装器)，固定名 todoist-windows.exe。
+/// - [windowsZipUrl]：Windows 免安装版 (Ubuntu 交叉编译后打包的 zip)，固定名 todoist-windows.zip。
+///   后续若上线正式安装器 (exe)，再新增 [windowsExeUrl] 字段。
 class DownloadLinks {
   static const String githubRepo = 'wolf2999/todolist';
   static const String apkUrl =
       'https://github.com/$githubRepo/releases/latest/download/todolist-android.apk';
-  static const String windowsExeUrl =
-      'https://github.com/$githubRepo/releases/latest/download/todolist-windows.exe';
-  static bool get windowsReady => windowsExeUrl.isNotEmpty;
+  static const String windowsZipUrl =
+      'https://github.com/$githubRepo/releases/latest/download/todolist-windows.zip';
+  static bool get windowsReady => windowsZipUrl.isNotEmpty;
 }
 

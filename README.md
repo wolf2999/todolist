@@ -99,7 +99,7 @@ flutter run -d ios
 | 平台 | 下载 |
 | ---- | ---- |
 | Android (arm64) | [todolist-android.apk](https://github.com/wolf2999/todolist/releases/latest/download/todolist-android.apk) |
-| Windows (安装包) | [todolist-windows.exe](https://github.com/wolf2999/todolist/releases/latest/download/todolist-windows.exe) |
+| Windows (免安装 zip) | [todolist-windows.zip](https://github.com/wolf2999/todolist/releases/latest/download/todolist-windows.zip) |
 | Web (PWA) | <https://atodolist.pages.dev/> |
 
 > 安装包由 GitHub Actions 在打 `v*` tag 时自动构建并发布到 [Releases](https://github.com/wolf2999/todolist/releases)，`latest/download` 链接始终指向最新版本。

@@ -156,7 +156,7 @@ class _DownloadButton extends StatelessWidget {
               subtitle: DownloadLinks.windowsReady
                   ? 'windowsPkgSub'.tr()
                   : 'comingSoon'.tr(),
-              url: DownloadLinks.windowsExeUrl,
+              url: DownloadLinks.windowsZipUrl,
               enabled: DownloadLinks.windowsReady,
             ),
             const SizedBox(height: 12),
