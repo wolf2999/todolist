@@ -9,9 +9,11 @@ name: Windows Zip Release
 # 当前方案：在 windows-latest 上用 Flutter 正常构建 Windows Release，再用 PowerShell 的
 #          Compress-Archive 直接打包成 todolist-windows.zip（免安装、解压即用）。
 #          注意：Flutter 不支持在非 Windows 主机上交叉编译 Windows 目标，故必须用 windows runner。
-#          本方案不依赖 Visual Studio / Inno Setup（仅压缩，无需链接安装器），不会触发 “no instance of Visual Studio” 报错。
+#          windows-latest runner 不预装 Visual Studio，需先用 microsoft/setup-msbuild@v2
+#          装 VS 2022 Build Tools（Flutter 3.29 用的 CMake Generator 才会找到编译器）。
+#          本方案不再依赖 Inno Setup（仅压缩），所以不需要 .iss 脚本，也避免“no instance of VS”报错。
 #
-#          后续若需要正式安装器（.exe），再加一条 windows-installer.yml（需解决 VS 工具链问题）。
+#          后续若需要正式安装器（.exe），再加一条 windows-installer.yml（同样依赖 VS 工具链，再加 Inno Setup）。
 on:
   push:
     tags:
@@ -43,6 +45,11 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Install Visual Studio 2022 Build Tools
+        # Flutter 在 windows 上构建需要 MSVC 编译器（CMake Generator: Visual Studio）。
+        # windows-latest runner 不预装 VS，须显式装 Build Tools。
+        uses: microsoft/setup-msbuild@v2
 
       - name: Build Windows (release)
         run: flutter build windows --release
